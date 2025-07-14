@@ -77,30 +77,12 @@
                 </div>
             </div>
 
-            <!-- Voice & Audio Settings -->
+            <!-- Audio Settings -->
             <div class="space-y-4 mb-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="jp-voice-select" class="block text-lg font-medium mb-2">เลือกเสียง (ญี่ปุ่น):</label>
-                        <select id="jp-voice-select" class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                            <option>กำลังโหลดเสียง...</option>
-                        </select>
-                    </div>
-                     <div>
-                        <label for="th-voice-select" class="block text-lg font-medium mb-2">เลือกเสียง (ไทย):</label>
-                        <select id="th-voice-select" class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                            <option>กำลังโหลดเสียง...</option>
-                        </select>
-                    </div>
-                </div>
                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                     <div>
-                        <label for="rate-slider" class="block text-lg font-medium mb-2">ความเร็ว: <span id="rate-value" class="font-bold text-indigo-600 dark:text-indigo-400">0.9</span></label>
-                        <input type="range" id="rate-slider" min="0.5" max="2" step="0.1" value="0.9" class="w-full">
-                    </div>
-                    <div>
-                        <label for="pitch-slider" class="block text-lg font-medium mb-2">ความเข้มเสียง: <span id="pitch-value" class="font-bold text-indigo-600 dark:text-indigo-400">1.0</span></label>
-                        <input type="range" id="pitch-slider" min="0" max="2" step="0.1" value="1" class="w-full">
+                        <label for="rate-slider" class="block text-lg font-medium mb-2">ความเร็ว: <span id="rate-value" class="font-bold text-indigo-600 dark:text-indigo-400">1.0</span></label>
+                        <input type="range" id="rate-slider" min="0.5" max="1.5" step="0.1" value="1.0" class="w-full">
                     </div>
                 </div>
             </div>
@@ -135,6 +117,7 @@
             <p>เลือกบทเรียนที่ต้องการแล้วกด "เล่น"</p>
         </footer>
     </div>
+
 
 
     <script>
@@ -224,72 +207,34 @@
         const loopCheckbox = document.getElementById('loop-checkbox');
         const selectAllBtn = document.getElementById('select-all-btn');
         const deselectAllBtn = document.getElementById('deselect-all-btn');
-        const jpVoiceSelect = document.getElementById('jp-voice-select');
-        const thVoiceSelect = document.getElementById('th-voice-select');
         const rateSlider = document.getElementById('rate-slider');
-        const pitchSlider = document.getElementById('pitch-slider');
         const rateValue = document.getElementById('rate-value');
-        const pitchValue = document.getElementById('pitch-value');
         
-        const synth = window.speechSynthesis;
-        let voices = [];
         let currentPlaylist = [];
         let wordIndex = 0;
         let isPlayingAll = false;
+        let currentAudio = null;
 
-        function populateVoiceList() {
-            voices = synth.getVoices();
-            jpVoiceSelect.innerHTML = '';
-            thVoiceSelect.innerHTML = '';
-
-            const jpVoices = voices.filter(voice => voice.lang.startsWith('ja'));
-            const thVoices = voices.filter(voice => voice.lang.startsWith('th'));
-
-            const createOption = (voice, selectElement) => {
-                const option = document.createElement('option');
-                option.textContent = `${voice.name} (${voice.lang})`;
-                option.setAttribute('data-name', voice.name);
-                selectElement.appendChild(option);
-            };
-
-            if (jpVoices.length > 0) jpVoices.forEach(voice => createOption(voice, jpVoiceSelect));
-            else jpVoiceSelect.innerHTML = '<option>ไม่พบเสียงภาษาญี่ปุ่น</option>';
+        async function speakDispatcher(text, lang) {
+            if (currentAudio) {
+                currentAudio.pause();
+            }
             
-            if (thVoices.length > 0) thVoices.forEach(voice => createOption(voice, thVoiceSelect));
-            else thVoiceSelect.innerHTML = '<option>ไม่พบเสียงภาษาไทย</option>';
+            return new Promise(resolve => {
+                const langCode = lang.startsWith('ja') ? 'ja' : 'th';
+                currentAudio = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(text) + '&tl=' + langCode + '&client=tw-ob');
+                currentAudio.playbackRate = parseFloat(rateSlider.value);
+                currentAudio.onended = resolve;
+                currentAudio.onerror = () => { console.error('Audio playback error.'); resolve(); };
+                currentAudio.play().catch(e => { console.error("Playback failed:", e); resolve(); });
+            });
         }
-        
-        function speakSingle(text, lang = 'ja-JP') {
+
+        async function speakSingle(text, lang = 'ja-JP') {
             if (isPlayingAll) {
                 stopPlayback();
             }
-            setTimeout(() => {
-                synth.cancel(); 
-                speakAndChain(text, lang, null);
-            }, 100);
-        }
-
-        function speakAndChain(text, lang, onEndCallback) {
-            if (text !== '') {
-                const utterance = new SpeechSynthesisUtterance(text);
-                const voiceSelect = lang.startsWith('ja') ? jpVoiceSelect : thVoiceSelect;
-                const selectedVoiceName = voiceSelect.selectedOptions[0]?.getAttribute('data-name');
-                const selectedVoice = voices.find(voice => voice.name === selectedVoiceName);
-
-                if (selectedVoice) utterance.voice = selectedVoice;
-                
-                utterance.lang = lang;
-                utterance.pitch = parseFloat(pitchSlider.value);
-                utterance.rate = parseFloat(rateSlider.value);
-                utterance.onend = onEndCallback;
-                utterance.onerror = (event) => {
-                    console.error('SpeechSynthesisUtterance.onerror', event);
-                    if (onEndCallback) onEndCallback();
-                };
-                synth.speak(utterance);
-            } else {
-                if (onEndCallback) onEndCallback();
-            }
+            await speakDispatcher(text, lang);
         }
 
         function updateMediaSession(word) {
@@ -302,7 +247,7 @@
             }
         }
 
-        function playNextWord() {
+        async function playNextWord() {
             if (!isPlayingAll) return;
 
             if (wordIndex >= currentPlaylist.length) {
@@ -326,18 +271,17 @@
                 }
             });
             
-            speakAndChain(word.jp, 'ja-JP', () => {
-                setTimeout(() => {
-                    if (!isPlayingAll) return;
-                    speakAndChain(word.th, 'th-TH', () => {
-                        wordIndex++;
-                        setTimeout(() => {
-                            if (!isPlayingAll) return;
-                            playNextWord();
-                        }, 500);
-                    });
-                }, 200);
-            });
+            await speakDispatcher(word.jp, 'ja-JP');
+            if (!isPlayingAll) return;
+            await new Promise(resolve => setTimeout(resolve, 200));
+            if (!isPlayingAll) return;
+
+            await speakDispatcher(word.th, 'th-TH');
+            if (!isPlayingAll) return;
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            wordIndex++;
+            playNextWord();
         }
         
         function buildAndDisplayPlaylist() {
@@ -398,7 +342,9 @@
 
         function stopPlayback() {
             isPlayingAll = false;
-            synth.cancel();
+            if (currentAudio) {
+                currentAudio.pause();
+            }
             playAllBtn.classList.remove('hidden');
             stopBtn.classList.add('hidden');
             document.querySelectorAll('#vocab-list > div').forEach(el => {
@@ -426,7 +372,7 @@
         }
 
         playAllBtn.addEventListener('click', () => {
-            if (synth.speaking || currentPlaylist.length === 0) return;
+            if (currentPlaylist.length === 0) return;
             wordIndex = 0;
             isPlayingAll = true;
             playAllBtn.classList.add('hidden');
@@ -451,24 +397,12 @@
         
         rateSlider.addEventListener('input', (e) => {
             rateValue.textContent = parseFloat(e.target.value).toFixed(1);
-        });
-
-        pitchSlider.addEventListener('input', (e) => {
-            pitchValue.textContent = parseFloat(e.target.value).toFixed(1);
+            if(currentAudio) {
+                currentAudio.playbackRate = parseFloat(e.target.value);
+            }
         });
 
         window.onload = () => {
-            if (!('speechSynthesis' in window)) {
-                alert('ขออภัย, เบราว์เซอร์ของคุณไม่รองรับการสังเคราะห์เสียงพูด');
-                playAllBtn.disabled = true;
-                return;
-            }
-            
-            populateVoiceList();
-            if (speechSynthesis.onvoiceschanged !== undefined) {
-                speechSynthesis.onvoiceschanged = populateVoiceList;
-            }
-            
             for (let i = 1; i <= 25; i++) {
                 const div = document.createElement('div');
                 const checkbox = document.createElement('input');
