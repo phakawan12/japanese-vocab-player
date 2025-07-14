@@ -292,12 +292,22 @@
             }
         }
 
+        function updateMediaSession(word) {
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: word.jp,
+                    artist: 'เครื่องเล่นเสียงคำศัพท์',
+                    album: `บทที่ ${word.chapter || ''}`,
+                });
+            }
+        }
+
         function playNextWord() {
             if (!isPlayingAll) return;
 
             if (wordIndex >= currentPlaylist.length) {
                 if (loopCheckbox.checked) {
-                    wordIndex = 0; // Loop back to the beginning
+                    wordIndex = 0; // Loop back
                 } else {
                     stopPlayback();
                     return;
@@ -305,6 +315,7 @@
             }
 
             const word = currentPlaylist[wordIndex];
+            updateMediaSession(word);
             
             document.querySelectorAll('#vocab-list > div').forEach((el, index) => {
                 const isCurrent = index === wordIndex;
@@ -337,7 +348,8 @@
             checkedBoxes.forEach(box => {
                 const chapterNumber = box.dataset.chapter;
                 if (vocabularyData[chapterNumber]) {
-                    currentPlaylist.push(...vocabularyData[chapterNumber]);
+                    const wordsWithChapter = vocabularyData[chapterNumber].map(word => ({...word, chapter: chapterNumber }));
+                    currentPlaylist.push(...wordsWithChapter);
                 }
             });
 
@@ -392,6 +404,25 @@
             document.querySelectorAll('#vocab-list > div').forEach(el => {
                  el.classList.remove('bg-indigo-100', 'dark:bg-indigo-900/50');
             });
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'none';
+            }
+        }
+
+        function setupMediaSession() {
+            if (!('mediaSession' in navigator)) {
+                return;
+            }
+            navigator.mediaSession.setActionHandler('play', () => {
+                if (!isPlayingAll) {
+                    playAllBtn.click();
+                }
+            });
+            navigator.mediaSession.setActionHandler('pause', () => {
+                if (isPlayingAll) {
+                    stopBtn.click();
+                }
+            });
         }
 
         playAllBtn.addEventListener('click', () => {
@@ -400,6 +431,9 @@
             isPlayingAll = true;
             playAllBtn.classList.add('hidden');
             stopBtn.classList.remove('hidden');
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'playing';
+            }
             playNextWord();
         });
 
@@ -454,7 +488,8 @@
                 chapterCheckboxesContainer.appendChild(div);
             }
             
-            buildAndDisplayPlaylist(); // Initial call
+            buildAndDisplayPlaylist();
+            setupMediaSession();
         };
     </script>
 </body>
