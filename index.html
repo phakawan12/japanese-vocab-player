@@ -135,10 +135,6 @@
             <p>เลือกบทเรียนที่ต้องการแล้วกด "เล่น"</p>
         </footer>
     </div>
-    
-    <!-- Silent audio element for background playback trick -->
-    <audio id="silent-audio" loop src="https://cdn.jsdelivr.net/gh/kairi003/silent-mp3/silence.mp3" style="display:none;"></audio>
-
 
 
     <script>
@@ -219,6 +215,7 @@
                 { jp: 'かんがえます', romaji: 'kangaemasu', th: 'คิด, ครุ่นคิด' }, { jp: 'つきます[えきに～]', romaji: 'tsukimasu[eki ni~]', th: 'ถึง[สถานี]' }, { jp: 'とります[としを～]', romaji: 'torimasu[toshi o~]', th: '[อายุ]มากขึ้น' }, { jp: 'たります', romaji: 'tarimasu', th: 'เพียงพอ' }, { jp: 'いなか', romaji: 'inaka', th: 'ต่างจังหวัด, ชนบท' }, { jp: 'チャンス', romaji: 'chansu', th: 'โอกาส' }, { jp: 'おく', romaji: 'oku', th: 'ร้อยล้าน' }, { jp: 'もし[～たら]', romaji: 'moshi[~tara]', th: 'ถ้า...' }, { jp: 'いみ', romaji: 'imi', th: 'ความหมาย' }, { jp: 'てんきん', romaji: 'tenkin', th: 'การย้ายไปทำงานสาขาอื่น' }, { jp: 'こと', romaji: 'koto', th: 'เรื่อง' }, { jp: '[いろいろ]おせわになりました', romaji: '[iroiro] osewa ni narimashita', th: 'ได้รับความกรุณา[ต่างๆ มากมาย]' }, { jp: 'がんばります', romaji: 'ganbarimasu', th: 'พยายาม' }, { jp: 'どうぞおげんきで', romaji: 'dōzo ogenki de', th: 'ขอให้โชคดี' },
             ],
         };
+
         const chapterCheckboxesContainer = document.getElementById('chapter-checkboxes');
         const playlistTitle = document.getElementById('playlist-title');
         const vocabList = document.getElementById('vocab-list');
@@ -233,7 +230,6 @@
         const pitchSlider = document.getElementById('pitch-slider');
         const rateValue = document.getElementById('rate-value');
         const pitchValue = document.getElementById('pitch-value');
-        const silentAudio = document.getElementById('silent-audio');
         
         const synth = window.speechSynthesis;
         let voices = [];
@@ -295,23 +291,13 @@
                 if (onEndCallback) onEndCallback();
             }
         }
-        
-        function updateMediaSession(word) {
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.metadata = new MediaMetadata({
-                    title: word.jp,
-                    artist: 'เครื่องเล่นเสียงคำศัพท์',
-                    album: `บทที่ ${word.chapter || ''}`,
-                });
-            }
-        }
 
         function playNextWord() {
             if (!isPlayingAll) return;
 
             if (wordIndex >= currentPlaylist.length) {
                 if (loopCheckbox.checked) {
-                    wordIndex = 0; // Loop back
+                    wordIndex = 0; // Loop back to the beginning
                 } else {
                     stopPlayback();
                     return;
@@ -319,7 +305,6 @@
             }
 
             const word = currentPlaylist[wordIndex];
-            updateMediaSession(word);
             
             document.querySelectorAll('#vocab-list > div').forEach((el, index) => {
                 const isCurrent = index === wordIndex;
@@ -352,8 +337,7 @@
             checkedBoxes.forEach(box => {
                 const chapterNumber = box.dataset.chapter;
                 if (vocabularyData[chapterNumber]) {
-                    const wordsWithChapter = vocabularyData[chapterNumber].map(word => ({...word, chapter: chapterNumber }));
-                    currentPlaylist.push(...wordsWithChapter);
+                    currentPlaylist.push(...vocabularyData[chapterNumber]);
                 }
             });
 
@@ -403,46 +387,19 @@
         function stopPlayback() {
             isPlayingAll = false;
             synth.cancel();
-            silentAudio.pause(); // Pause silent audio
             playAllBtn.classList.remove('hidden');
             stopBtn.classList.add('hidden');
             document.querySelectorAll('#vocab-list > div').forEach(el => {
                  el.classList.remove('bg-indigo-100', 'dark:bg-indigo-900/50');
             });
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.playbackState = 'none';
-            }
-        }
-
-        function setupMediaSession() {
-            if (!('mediaSession' in navigator)) {
-                return;
-            }
-            navigator.mediaSession.setActionHandler('play', () => {
-                if (!isPlayingAll) {
-                    playAllBtn.click();
-                }
-            });
-            navigator.mediaSession.setActionHandler('pause', () => {
-                if (isPlayingAll) {
-                    stopBtn.click();
-                }
-            });
         }
 
         playAllBtn.addEventListener('click', () => {
             if (synth.speaking || currentPlaylist.length === 0) return;
-            
-            // Play silent audio to keep session alive
-            silentAudio.play().catch(e => console.error("Silent audio playback failed:", e));
-
             wordIndex = 0;
             isPlayingAll = true;
             playAllBtn.classList.add('hidden');
             stopBtn.classList.remove('hidden');
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.playbackState = 'playing';
-            }
             playNextWord();
         });
 
@@ -497,8 +454,7 @@
                 chapterCheckboxesContainer.appendChild(div);
             }
             
-            buildAndDisplayPlaylist();
-            setupMediaSession();
+            buildAndDisplayPlaylist(); // Initial call
         };
     </script>
 </body>
