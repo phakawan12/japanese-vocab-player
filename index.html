@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เครื่องเล่นเสียงคำศัพท์ภาษาญี่ปุ่น</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans Thai', sans-serif;
+        }
+        .jp-font {
+            font-family: 'Mochiy Pop One', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-indigo-600 dark:text-indigo-400 jp-font">日本語単語プレーヤー</h1>
+            <p class="text-lg sm:text-xl mt-2">เครื่องเล่นเสียงคำศัพท์ภาษาญี่ปุ่น (Minna no Nihongo บทที่ 1-25)</p>
+        </header>
+
+        <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+            <!-- Chapter & Voice Selectors -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label for="chapter-select" class="block text-lg font-medium mb-2">เลือกบทเรียน:</label>
+                    <select id="chapter-select" class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+                <div>
+                    <label for="jp-voice-select" class="block text-lg font-medium mb-2">เลือกเสียง (ญี่ปุ่น):</label>
+                    <select id="jp-voice-select" class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option>กำลังโหลดเสียง...</option>
+                    </select>
+                </div>
+                 <div>
+                    <label for="th-voice-select" class="block text-lg font-medium mb-2">เลือกเสียง (ไทย):</label>
+                    <select id="th-voice-select" class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option>กำลังโหลดเสียง...</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Controls and Title -->
+            <div class="flex items-center justify-between mb-4">
+                <h2 id="chapter-title" class="text-2xl font-bold text-indigo-500 dark:text-indigo-300"></h2>
+                <div class="flex space-x-2">
+                    <button id="play-all-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+                        <span>เล่นทั้งหมด</span>
+                    </button>
+                    <button id="stop-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2 hidden">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" /></svg>
+                        <span>หยุด</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Vocabulary List -->
+            <div id="vocab-list" class="space-y-3">
+                <!-- Vocabulary items will be populated by JS -->
+            </div>
+        </div>
+        
+        <footer class="text-center mt-8 text-gray-500 dark:text-gray-400 text-sm">
+            <p>กดปุ่ม 🔊 เพื่อฟังเสียงคำศัพท์ หรือกด "เล่นทั้งหมด" เพื่อฟังทั้งบท</p>
+        </footer>
+    </div>
+
+    <script>
+        const vocabularyData = {
+            1: [
+                { jp: 'わたし', romaji: 'Watashi', th: 'ผม, ดิฉัน' }, { jp: 'あなた', romaji: 'Anata', th: 'คุณ' }, { jp: 'あのひと (あのかた)', romaji: 'Anohito (Anokata)', th: 'คนนั้น, เขา, เธอ (あのかた เป็นคำสุภาพ)' }, { jp: 'みなさん', romaji: 'minasan', th: 'ทุกท่าน' }, { jp: '~さん', romaji: '~san', th: 'คุณ...' }, { jp: '~ちゃん', romaji: '~chan', th: 'หนู...' }, { jp: '~くん', romaji: '~kun', th: '(ต่อท้ายชื่อเด็กผู้ชาย)' }, { jp: '~じん', romaji: '~jin', th: 'ชาว...' }, { jp: 'せんせい', romaji: 'sensē', th: 'คุณครู, อาจารย์' }, { jp: 'きょうし', romaji: 'kyōshi', th: 'ครู, ผู้สอน' }, { jp: 'がくせい', romaji: 'gakusē', th: 'นักเรียน, นักศึกษา' }, { jp: 'かいしゃいん', romaji: 'kaishain', th: 'พนักงานบริษัท' }, { jp: 'しゃいん', romaji: 'shain', th: 'พนักงานบริษัท (ของ...)' }, { jp: 'ぎんこういん', romaji: 'ginkōin', th: 'พนักงานธนาคาร' }, { jp: 'いしゃ', romaji: 'isha', th: 'หมอ, แพทย์' }, { jp: 'けんきゅうしゃ', romaji: 'kenkyūsha', th: 'นักวิจัย' }, { jp: 'エンジニア', romaji: 'enjinia', th: 'วิศวกร' }, { jp: 'だいがく', romaji: 'daigaku', th: 'มหาวิทยาลัย' }, { jp: 'びょういん', romaji: 'byōin', th: 'โรงพยาบาล' }, { jp: 'だれ (どなた)', romaji: 'dare (donata)', th: 'ใคร (どなた เป็นคำสุภาพ)' }, { jp: '-さい', romaji: '-sai', th: 'อายุ...ปี' }, { jp: 'なんさい (おいくつ)', romaji: 'nansai (oikutsu)', th: 'อายุเท่าไหร่ (おいくつ เป็นคำสุภาพ)' }, { jp: 'はい', romaji: 'hai', th: 'ใช่' }, { jp: 'いいえ', romaji: 'iie', th: 'ไม่ใช่' }, { jp: 'はじめまして', romaji: 'Hajimemashite', th: 'ยินดีที่ได้รู้จัก' }, { jp: '~からきました', romaji: '~kara kimashita', th: 'มาจาก...' }, { jp: 'どうぞよろしくおねがいします', romaji: 'Dōzo yoroshiku onegaishimasu', th: 'ขอฝากเนื้อฝากตัวด้วย' }, { jp: 'しつれいですが', romaji: 'shitsurēdesuga', th: 'ขอประทานโทษ' }, { jp: 'おなまえは?', romaji: 'Onamae wa?', th: 'ขอทราบชื่อ' }, { jp: 'こちらは〜さんです', romaji: 'Kochira wa ~san desu', th: 'นี่คือคุณ...' },
+            ],
+            2: [
+                { jp: 'これ', romaji: 'kore', th: 'นี่, สิ่งนี้' }, { jp: 'それ', romaji: 'sore', th: 'นั่น, สิ่งนั้น' }, { jp: 'あれ', romaji: 'are', th: 'โน่น, สิ่งโน้น' }, { jp: 'この~', romaji: 'kono~', th: '~นี้' }, { jp: 'その~', romaji: 'sono~', th: '~นั้น' }, { jp: 'あの~', romaji: 'ano~', th: '~โน้น' }, { jp: 'ほん', romaji: 'hon', th: 'หนังสือ' }, { jp: 'じしょ', romaji: 'jisho', th: 'พจนานุกรม' }, { jp: 'ざっし', romaji: 'zasshi', th: 'นิตยสาร' }, { jp: 'しんぶん', romaji: 'shimbun', th: 'หนังสือพิมพ์' }, { jp: 'ノート', romaji: 'nōto', th: 'สมุด' }, { jp: 'てちょう', romaji: 'techō', th: 'สมุดพก' }, { jp: 'めいし', romaji: 'mēshi', th: 'นามบัตร' }, { jp: 'カード', romaji: 'kādo', th: 'การ์ด' }, { jp: 'えんぴつ', romaji: 'empitsu', th: 'ดินสอ' }, { jp: 'ボールペン', romaji: 'bōrupen', th: 'ปากกาลูกลื่น' }, { jp: 'シャープペンシル', romaji: 'shāpu penshiru', th: 'ดินสอกด' }, { jp: 'けしゴム', romaji: 'keshigomu', th: 'ยางลบ' }, { jp: 'かぎ', romaji: 'kagi', th: 'กุญแจ' }, { jp: 'とけい', romaji: 'tokē', th: 'นาฬิกา' }, { jp: 'かさ', romaji: 'kasa', th: 'ร่ม' }, { jp: 'かばん', romaji: 'kaban', th: 'กระเป๋า' }, { jp: 'さいふ', romaji: 'saifu', th: 'กระเป๋าสตางค์' }, { jp: 'CD', romaji: 'CD', th: 'ซีดี' }, { jp: 'テレビ', romaji: 'terebi', th: 'โทรทัศน์' }, { jp: 'ラジオ', romaji: 'rajio', th: 'วิทยุ' }, { jp: 'カメラ', romaji: 'kamera', th: 'กล้อง' }, { jp: 'コンピューター (パソコン)', romaji: 'Kompyūtā (pasokon)', th: 'คอมพิวเตอร์' }, { jp: 'くるま', romaji: 'kuruma', th: 'รถยนต์' }, { jp: 'つくえ', romaji: 'tsukue', th: 'โต๊ะ' }, { jp: 'いす', romaji: 'isu', th: 'เก้าอี้' }, { jp: 'チョコレート', romaji: 'chokorēto', th: 'ช็อกโกแลต' }, { jp: 'コーヒー', romaji: 'kōhī', th: 'กาแฟ' }, { jp: '[お]みやげ', romaji: 'omiyage', th: 'ของฝาก' }, { jp: 'えいご', romaji: 'ēgo', th: 'ภาษาอังกฤษ' }, { jp: 'にほんご', romaji: 'nihongo', th: 'ภาษาญี่ปุ่น' }, { jp: '~ご', romaji: '~go', th: 'ภาษา...' }, { jp: 'なん', romaji: 'nan', th: 'อะไร' }, { jp: 'そう', romaji: 'sō', th: 'เช่นนั้น' }, { jp: 'あのう', romaji: 'anō', th: 'เอ่อ...' }, { jp: 'えっ', romaji: 'e', th: 'เอ๊ะ!' }, { jp: 'どうぞ', romaji: 'Dōzo', th: 'เชิญ' }, { jp: 'どうもありがとうございます', romaji: 'Dōmo arigatō gozaimasu', th: 'ขอบคุณมาก' }, { jp: 'そうですか', romaji: 'Sōdesuka', th: 'งั้นหรือ' }, { jp: 'ちがいます', romaji: 'Chigaimasu', th: 'ไม่ใช่' }, { jp: 'あ', romaji: 'a', th: 'อ๊ะ!' }, { jp: 'これからおせわになります', romaji: 'Korekara osewani narimasu', th: 'จากนี้ไปหวังว่าคงได้รับความกรุณา' }, { jp: 'こちらこそよろしくおねがいします', romaji: 'Kochirakoso yoroshiku onegaishimasu', th: 'ทางนี้ก็เช่นกัน' },
+            ],
+            3: [
+                { jp: 'ここ', romaji: 'koko', th: 'ที่นี่' }, { jp: 'そこ', romaji: 'soko', th: 'ที่นั่น' }, { jp: 'あそこ', romaji: 'asoko', th: 'ที่โน่น' }, { jp: 'どこ', romaji: 'doko', th: 'ที่ไหน' }, { jp: 'こちら', romaji: 'kochira', th: 'ทางนี้(สุภาพ)' }, { jp: 'そちら', romaji: 'sochira', th: 'ทางนั้น(สุภาพ)' }, { jp: 'あちら', romaji: 'achira', th: 'ทางโน้น(สุภาพ)' }, { jp: 'どちら', romaji: 'dochira', th: 'ทางไหน(สุภาพ)' }, { jp: 'きょうしつ', romaji: 'kyōshitsu', th: 'ห้องเรียน' }, { jp: 'しょくどう', romaji: 'shokudō', th: 'โรงอาหาร' }, { jp: 'じむしょ', romaji: 'jimusho', th: 'สำนักงาน' }, { jp: 'かいぎしつ', romaji: 'kaigishitsu', th: 'ห้องประชุม' }, { jp: 'うけつけ', romaji: 'uketsuke', th: 'โต๊ะประชาสัมพันธ์' }, { jp: 'ロビー', romaji: 'robī', th: 'ล็อบบี้' }, { jp: 'へや', romaji: 'heya', th: 'ห้อง' }, { jp: 'トイレ (おてあらい)', romaji: 'toire (otearai)', th: 'ห้องน้ำ' }, { jp: 'かいだん', romaji: 'kaidan', th: 'บันได' }, { jp: 'エレベーター', romaji: 'erebētā', th: 'ลิฟต์' }, { jp: 'エスカレーター', romaji: 'esukarētā', th: 'บันไดเลื่อน' }, { jp: 'じどうはんばいき', romaji: 'jidōhambaiki', th: 'เครื่องขายอัตโนมัติ' }, { jp: 'でんわ', romaji: 'denwa', th: 'โทรศัพท์' }, { jp: 'けいたいでんわ', romaji: 'kētaidenwa', th: 'โทรศัพท์มือถือ' }, { jp: '[お]くに', romaji: '[o]kuni', th: 'ประเทศ' }, { jp: 'かいしゃ', romaji: 'kaisha', th: 'บริษัท' }, { jp: 'うち', romaji: 'uchi', th: 'บ้าน' }, { jp: 'じっか', romaji: 'jikka', th: 'บ้านพ่อแม่' }, { jp: 'くつ', romaji: 'kutsu', th: 'รองเท้า' }, { jp: 'ネクタイ', romaji: 'nekutai', th: 'เนกไท' }, { jp: 'ワイン', romaji: 'wain', th: 'ไวน์' }, { jp: 'うりば', romaji: 'uriba', th: 'เคาน์เตอร์ขายของ' }, { jp: 'ちか', romaji: 'chika', th: 'ใต้ดิน' }, { jp: '-かい(-がい)', romaji: '-kai(-gai)', th: 'ชั้น...' }, { jp: 'なんがい', romaji: 'nangai', th: 'ชั้นอะไร' }, { jp: 'えん', romaji: 'en', th: 'เยน' }, { jp: 'いくら', romaji: 'ikura', th: 'ราคาเท่าไหร่' }, { jp: 'ひゃく', romaji: 'hyaku', th: 'ร้อย' }, { jp: 'せん', romaji: 'sen', th: 'พัน' }, { jp: 'まん', romaji: 'man', th: 'หมื่น' }, { jp: 'すみません', romaji: 'Sumimasen', th: 'ขอโทษ' }, { jp: 'どうも', romaji: 'dōmo', th: 'ขอบคุณ' }, { jp: 'いらっしゃいませ', romaji: 'irasshaimase', th: 'ยินดีต้อนรับ' }, { jp: '[~を]みせてください', romaji: '[~o] misete kudasai', th: 'ขอดู...' }, { jp: 'じゃ', romaji: 'ja', th: 'งั้น...' }, { jp: '[~を]ください', romaji: '[~o] kudasai', th: 'ขอ...' },
+            ],
+            4: [
+                { jp: 'おきます', romaji: 'okimasu', th: 'ตื่นนอน' }, { jp: 'ねます', romaji: 'nemasu', th: 'นอน' }, { jp: 'はたらきます', romaji: 'hatarakimasu', th: 'ทำงาน' }, { jp: 'やすみます', romaji: 'yasumimasu', th: 'พักผ่อน, หยุด' }, { jp: 'べんきょうします', romaji: 'benkyōshimasu', th: 'เรียน' }, { jp: 'おわります', romaji: 'owarimasu', th: 'เสร็จ, เลิก' }, { jp: 'デパート', romaji: 'depāto', th: 'ห้างสรรพสินค้า' }, { jp: 'ぎんこう', romaji: 'ginkō', th: 'ธนาคาร' }, { jp: 'ゆうびんきょく', romaji: 'yūbinkyoku', th: 'ที่ทำการไปรษณีย์' }, { jp: 'としょかん', romaji: 'toshokan', th: 'ห้องสมุด' }, { jp: 'びじゅつかん', romaji: 'bijutsukan', th: 'หอศิลป์' }, { jp: 'いま', romaji: 'ima', th: 'ตอนนี้' }, { jp: 'じ', romaji: 'ji', th: '...โมง' }, { jp: 'ふん(-ぷん)', romaji: 'fun(-pun)', th: '...นาที' }, { jp: 'はん', romaji: 'han', th: 'ครึ่ง' }, { jp: 'なんじ', romaji: 'nanji', th: 'กี่โมง' }, { jp: 'なんぷん', romaji: 'nanpun', th: 'กี่นาที' }, { jp: 'ごぜん', romaji: 'gozen', th: 'ช่วงเช้า (a.m.)' }, { jp: 'ごご', romaji: 'gogo', th: 'ช่วงบ่าย (p.m.)' }, { jp: 'あさ', romaji: 'asa', th: 'เช้า' }, { jp: 'ひる', romaji: 'hiru', th: 'กลางวัน' }, { jp: 'ばん(よる)', romaji: 'ban(yoru)', th: 'เย็น, กลางคืน' }, { jp: 'おととい', romaji: 'ototoi', th: 'วานซืน' }, { jp: 'きのう', romaji: 'kinō', th: 'เมื่อวาน' }, { jp: 'きょう', romaji: 'kyō', th: 'วันนี้' }, { jp: 'あした', romaji: 'ashita', th: 'พรุ่งนี้' }, { jp: 'あさって', romaji: 'asatte', th: 'มะรืนนี้' }, { jp: 'けさ', romaji: 'kesa', th: 'เมื่อเช้า' }, { jp: 'こんばん', romaji: 'konban', th: 'เย็นนี้, คืนนี้' }, { jp: 'やすみ', romaji: 'yasumi', th: 'วันหยุด' }, { jp: 'ひるやすみ', romaji: 'hiruyasumi', th: 'พักกลางวัน' }, { jp: 'しけん', romaji: 'shiken', th: 'การสอบ' }, { jp: 'かいぎ', romaji: 'kaigi', th: 'การประชุม' }, { jp: 'えいが', romaji: 'ēga', th: 'ภาพยนตร์' }, { jp: 'しごと', romaji: 'shigoto', th: 'งาน' }, { jp: 'トレーニング', romaji: 'torēningu', th: 'การฝึกอบรม' }, { jp: 'まいあさ', romaji: 'maiasa', th: 'ทุกเช้า' }, { jp: 'まいばん', romaji: 'maiban', th: 'ทุกคืน' }, { jp: 'まいにち', romaji: 'mainichi', th: 'ทุกวัน' }, { jp: 'げつようび', romaji: 'getsuyōbi', th: 'วันจันทร์' }, { jp: 'かようび', romaji: 'kayōbi', th: 'วันอังคาร' }, { jp: 'すいようび', romaji: 'suiyōbi', th: 'วันพุธ' }, { jp: 'もくようび', romaji: 'mokuyōbi', th: 'วันพฤหัสบดี' }, { jp: 'きんようび', romaji: 'kinyōbi', th: 'วันศุกร์' }, { jp: 'どようび', romaji: 'doyōbi', th: 'วันเสาร์' }, { jp: 'にちようび', romaji: 'nichiyōbi', th: 'วันอาทิตย์' }, { jp: 'なんようび', romaji: 'nanyōbi', th: 'วันอะไร' }, { jp: '~から', romaji: '~kara', th: 'จาก...' }, { jp: '~まで', romaji: '~made', th: 'ถึง...' }, { jp: '~と~', romaji: '~to~', th: 'และ' }, { jp: 'たいへんですね', romaji: 'taihendesune', th: 'ลำบากนะ' }, { jp: 'ばんごう', romaji: 'bangō', th: 'หมายเลข' }, { jp: 'なんばん', romaji: 'namban', th: 'หมายเลขอะไร' },
+            ],
+            5: [
+                { jp: 'いきます', romaji: 'ikimasu', th: 'ไป' }, { jp: 'きます', romaji: 'kimasu', th: 'มา' }, { jp: 'かえります', romaji: 'kaerimasu', th: 'กลับ' }, { jp: 'がっこう', romaji: 'gakkō', th: 'โรงเรียน' }, { jp: 'スーパー', romaji: 'sūpā', th: 'ซูเปอร์มาร์เก็ต' }, { jp: 'えき', romaji: 'eki', th: 'สถานีรถไฟ' }, { jp: 'ひこうき', romaji: 'hikōki', th: 'เครื่องบิน' }, { jp: 'ふね', romaji: 'fune', th: 'เรือ' }, { jp: 'でんしゃ', romaji: 'densha', th: 'รถไฟฟ้า' }, { jp: 'ちかてつ', romaji: 'chikatetsu', th: 'รถไฟใต้ดิน' }, { jp: 'しんかんせん', romaji: 'shinkansen', th: 'รถไฟชินคันเซ็น' }, { jp: 'バス', romaji: 'basu', th: 'รถบัส' }, { jp: 'タクシー', romaji: 'takushī', th: 'แท็กซี่' }, { jp: 'じてんしゃ', romaji: 'jitensha', th: 'จักรยาน' }, { jp: 'あるいて', romaji: 'aruite', th: 'เดิน(ไป)' }, { jp: 'バイク', romaji: 'baiku', th: 'มอเตอร์ไซค์' }, { jp: 'バイクタクシー', romaji: 'baikutakushī', th: 'มอเตอร์ไซค์รับจ้าง' }, { jp: 'ひと', romaji: 'hito', th: 'คน' }, { jp: 'ともだち', romaji: 'tomodachi', th: 'เพื่อน' }, { jp: 'かれ', romaji: 'kare', th: 'เขา(ผู้ชาย)' }, { jp: 'かのじょ', romaji: 'kanojo', th: 'เขา(ผู้หญิง)' }, { jp: 'かぞく', romaji: 'kazoku', th: 'ครอบครัว' }, { jp: 'おきゃくさん', romaji: 'okyakusan', th: 'ลูกค้า' }, { jp: 'せんぱい', romaji: 'senpai', th: 'รุ่นพี่' }, { jp: 'こうはい', romaji: 'kōhai', th: 'รุ่นน้อง' }, { jp: 'ひとりで', romaji: 'hitoride', th: 'คนเดียว' }, { jp: 'せんしゅう', romaji: 'senshū', th: 'สัปดาห์ที่แล้ว' }, { jp: 'こんしゅう', romaji: 'konshū', th: 'สัปดาห์นี้' }, { jp: 'らいしゅう', romaji: 'raishū', th: 'สัปดาห์หน้า' }, { jp: 'せんげつ', romaji: 'sengetsu', th: 'เดือนที่แล้ว' }, { jp: 'こんげつ', romaji: 'kongetsu', th: 'เดือนนี้' }, { jp: 'らいげつ', romaji: 'raigetsu', th: 'เดือนหน้า' }, { jp: 'きょねん', romaji: 'kyonen', th: 'ปีที่แล้ว' }, { jp: 'ことし', romaji: 'kotoshi', th: 'ปีนี้' }, { jp: 'らいねん', romaji: 'rainen', th: 'ปีหน้า' }, { jp: 'ねん', romaji: 'nen', th: 'ปี' }, { jp: 'なんねん', romaji: 'nannen', th: 'ปีอะไร' }, { jp: '-がつ', romaji: '-gatsu', th: 'เดือน...' }, { jp: 'なんがつ', romaji: 'nangatsu', th: 'เดือนอะไร' }, { jp: 'ついたち', romaji: 'tsuitachi', th: 'วันที่ 1' }, { jp: 'ふつか', romaji: 'futsuka', th: 'วันที่ 2' }, { jp: 'みっか', romaji: 'mikka', th: 'วันที่ 3' }, { jp: 'よっか', romaji: 'yokka', th: 'วันที่ 4' }, { jp: 'いつか', romaji: 'itsuka', th: 'วันที่ 5' }, { jp: 'むいか', romaji: 'muika', th: 'วันที่ 6' }, { jp: 'なのか', romaji: 'nanoka', th: 'วันที่ 7' }, { jp: 'ようか', romaji: 'yōka', th: 'วันที่ 8' }, { jp: 'ここのか', romaji: 'kokonoka', th: 'วันที่ 9' }, { jp: 'とおか', romaji: 'tōka', th: 'วันที่ 10' }, { jp: 'じゅうよっか', romaji: 'jūyokka', th: 'วันที่ 14' }, { jp: 'はつか', romaji: 'hatsuka', th: 'วันที่ 20' }, { jp: 'にじゅうよっか', romaji: 'nijūyokka', th: 'วันที่ 24' }, { jp: '-にち', romaji: '-nichi', th: 'วันที่...' }, { jp: 'なんにち', romaji: 'nannichi', th: 'วันที่เท่าไหร่' }, { jp: 'いつ', romaji: 'itsu', th: 'เมื่อไหร่' }, { jp: 'たんじょうび', romaji: 'tanjōbi', th: 'วันเกิด' }, { jp: 'どういたしまして', romaji: 'dōitashimashite', th: 'ไม่เป็นไร' }, { jp: '-ばんせん', romaji: '-bansen', th: 'ชานชาลาที่...' }, { jp: 'つぎの', romaji: 'tsugino', th: 'ต่อไป' }, { jp: 'ふつう', romaji: 'futsū', th: 'รถไฟธรรมดา' }, { jp: 'きゅうこう', romaji: 'kyūkō', th: 'รถด่วน' }, { jp: 'とっきゅう', romaji: 'tokkyū', th: 'รถด่วนพิเศษ' },
+            ],
+            6: [
+                { jp: 'たべます', romaji: 'tabemasu', th: 'กิน' }, { jp: 'のみます', romaji: 'nomimasu', th: 'ดื่ม' }, { jp: 'すいます[たばこを~]', romaji: 'suimasu[tabako o~]', th: 'สูบ[บุหรี่]' }, { jp: 'みます', romaji: 'mimasu', th: 'ดู' }, { jp: 'ききます', romaji: 'kikimasu', th: 'ฟัง' }, { jp: 'よみます', romaji: 'yomimasu', th: 'อ่าน' }, { jp: 'かきます', romaji: 'kakimasu', th: 'เขียน' }, { jp: 'かいます', romaji: 'kaimasu', th: 'ซื้อ' }, { jp: 'とります[しゃしんを~]', romaji: 'torimasu[shashin o~]', th: 'ถ่าย[รูป]' }, { jp: 'します', romaji: 'shimasu', th: 'ทำ, เล่น' }, { jp: 'あいます[ともだちに~]', romaji: 'aimasu[tomodachi ni~]', th: 'พบ[เพื่อน]' }, { jp: 'ごはん', romaji: 'gohan', th: 'ข้าว, อาหาร' }, { jp: 'あさごはん', romaji: 'asagohan', th: 'อาหารเช้า' }, { jp: 'ひるごはん', romaji: 'hirugohan', th: 'อาหารกลางวัน' }, { jp: 'ばんごはん', romaji: 'bangohan', th: 'อาหารเย็น' }, { jp: 'パン', romaji: 'pan', th: 'ขนมปัง' }, { jp: 'たまご', romaji: 'tamago', th: 'ไข่' }, { jp: 'にく', romaji: 'niku', th: 'เนื้อ' }, { jp: 'ぎゅうにく/ぶたにく/とりにく', romaji: 'gyūniku/butaniku/toriniku', th: 'เนื้อวัว/หมู/ไก่' }, { jp: 'さかな', romaji: 'sakana', th: 'ปลา' }, { jp: 'やさい', romaji: 'yasai', th: 'ผัก' }, { jp: 'くだもの', romaji: 'kudamono', th: 'ผลไม้' }, { jp: 'にほんりょうり', romaji: 'nihonryōri', th: 'อาหารญี่ปุ่น' }, { jp: 'タイりょうり', romaji: 'tairyōri', th: 'อาหารไทย' }, { jp: 'みず', romaji: 'mizu', th: 'น้ำ' }, { jp: 'おちゃ', romaji: 'ocha', th: 'น้ำชา' }, { jp: 'こうちゃ', romaji: 'kōcha', th: 'ชาฝรั่ง' }, { jp: 'ぎゅうにゅう(ミルク)', romaji: 'gyūnyū(miruku)', th: 'นม' }, { jp: 'ジュース', romaji: 'jūsu', th: 'น้ำผลไม้' }, { jp: 'ビール', romaji: 'bīru', th: 'เบียร์' }, { jp: '[お]さけ', romaji: '[o]sake', th: 'เหล้า' }, { jp: 'たばこ', romaji: 'tabako', th: 'บุหรี่' }, { jp: 'てがみ', romaji: 'tegami', th: 'จดหมาย' }, { jp: 'レポート', romaji: 'repōto', th: 'รายงาน' }, { jp: 'しゃしん', romaji: 'shashin', th: 'รูปถ่าย' }, { jp: 'ビデオ', romaji: 'bideo', th: 'วิดีโอ' }, { jp: 'おんがく', romaji: 'ongaku', th: 'ดนตรี' }, { jp: 'みせ', romaji: 'mise', th: 'ร้านค้า' }, { jp: 'レストラン', romaji: 'resutoran', th: 'ร้านอาหาร' }, { jp: 'にわ', romaji: 'niwa', th: 'สวน' }, { jp: 'しゅくだい', romaji: 'shukudai', th: 'การบ้าน' }, { jp: 'テニス', romaji: 'tenisu', th: 'เทนนิส' }, { jp: 'サッカー', romaji: 'sakkā', th: 'ฟุตบอล' }, { jp: '[お]はなみ', romaji: '[o]hanami', th: 'การชมดอกซากุระ' }, { jp: 'なに', romaji: 'nani', th: 'อะไร' }, { jp: 'いっしょに', romaji: 'isshoni', th: 'ด้วยกัน' }, { jp: 'ちょっと', romaji: 'chotto', th: 'นิดหน่อย' }, { jp: 'いつも', romaji: 'itsumo', th: 'เสมอๆ' }, { jp: 'ときどき', romaji: 'tokidoki', th: 'บางครั้ง' }, { jp: 'それから', romaji: 'sorekara', th: 'หลังจากนั้น' }, { jp: 'ええ', romaji: 'ee', th: 'ครับ/ค่ะ' }, { jp: 'いいですね', romaji: 'iidesune', th: 'ดีนะ' }, { jp: 'わかりました', romaji: 'wakarimashita', th: 'เข้าใจแล้ว' }, { jp: 'じゃ、また[あした]', romaji: 'ja, mata[ashita]', th: 'แล้วพบกันใหม่[พรุ่งนี้]' },
+            ],
+            7: [
+                { jp: 'きります', romaji: 'kirimasu', th: 'ตัด' }, { jp: 'おくります', romaji: 'okurimasu', th: 'ส่ง' }, { jp: 'あげます', romaji: 'agemasu', th: 'ให้' }, { jp: 'もらいます', romaji: 'moraimasu', th: 'ได้รับ' }, { jp: 'かします', romaji: 'kashimasu', th: 'ให้ยืม' }, { jp: 'かります', romaji: 'karimasu', th: 'ขอยืม' }, { jp: 'おしえます', romaji: 'oshiemasu', th: 'สอน' }, { jp: 'ならいます', romaji: 'naraimasu', th: 'เรียน (มีผู้สอน)' }, { jp: 'かけます[でんわを～]', romaji: 'kakemasu[denwa o~]', th: 'โทร[ศัพท์]' }, { jp: 'て', romaji: 'te', th: 'มือ' }, { jp: 'はし', romaji: 'hashi', th: 'ตะเกียบ' }, { jp: 'スプーン', romaji: 'supūn', th: 'ช้อน' }, { jp: 'ナイフ', romaji: 'naifu', th: 'มีด' }, { jp: 'フォーク', romaji: 'fōku', th: 'ส้อม' }, { jp: 'はさみ', romaji: 'hasami', th: 'กรรไกร' }, { jp: 'パソコン', romaji: 'pasokon', th: 'คอมพิวเตอร์ส่วนบุคคล' }, { jp: 'ケータイ', romaji: 'kētai', th: 'โทรศัพท์มือถือ' }, { jp: 'メール', romaji: 'mēru', th: 'อีเมล' }, { jp: 'ねんがじょう', romaji: 'nengajō', th: 'ไปรษณียบัตรปีใหม่' }, { jp: 'パンチ', romaji: 'panchi', th: 'ที่เจาะกระดาษ' }, { jp: 'ホッチキス', romaji: 'hotchikisu', th: 'ที่เย็บกระดาษ' }, { jp: 'セロテープ', romaji: 'serotēpu', th: 'สกอตเทป' }, { jp: 'けしゴム', romaji: 'keshigomu', th: 'ยางลบ' }, { jp: 'かみ', romaji: 'kami', th: 'กระดาษ' }, { jp: 'はな', romaji: 'hana', th: 'ดอกไม้' }, { jp: 'シャツ', romaji: 'shatsu', th: 'เสื้อเชิ้ต' }, { jp: 'プレゼント', romaji: 'purezento', th: 'ของขวัญ' }, { jp: 'にもつ', romaji: 'nimotsu', th: 'สัมภาระ' }, { jp: 'おかね', romaji: 'okane', th: 'เงิน' }, { jp: 'きっぷ', romaji: 'kippu', th: 'ตั๋ว' }, { jp: 'クリスマス', romaji: 'kurisumasu', th: 'คริสต์มาส' }, { jp: 'ちち', romaji: 'chichi', th: 'พ่อ (ของฉัน)' }, { jp: 'はは', romaji: 'haha', th: 'แม่ (ของฉัน)' }, { jp: 'おとうさん', romaji: 'otōsan', th: 'คุณพ่อ (ของผู้อื่น)' }, { jp: 'おかあさん', romaji: 'okāsan', th: 'คุณแม่ (ของผู้อื่น)' }, { jp: 'もう', romaji: 'mō', th: '...แล้ว' }, { jp: 'まだ', romaji: 'mada', th: 'ยัง' }, { jp: 'これから', romaji: 'korekara', 'th': 'ต่อจากนี้ไป' }, { jp: 'いらっしゃい', romaji: 'irasshai', 'th': 'ยินดีต้อนรับ' }, { jp: 'どうぞおあがりください', romaji: 'dōzo oagari kudasai', 'th': 'เชิญขึ้นมาเลย' }, { jp: 'しつれいします', romaji: 'shitsurei shimasu', 'th': 'ขออนุญาต' }, { jp: '[～は]いかがですか', romaji: '[~wa] ikaga desu ka', 'th': 'รับ[~]ไหม' }, { jp: 'いただきます', romaji: 'itadakimasu', 'th': 'จะทานแล้ว' }, { jp: 'ごちそうさまでした', romaji: 'gochisōsama deshita', 'th': 'ขอบคุณสำหรับอาหาร' },
+            ],
+            8: [
+                { jp: 'ハンサム[な]', romaji: 'hansamu[na]', th: 'หล่อ' }, { jp: 'きれい[な]', romaji: 'kirei[na]', th: 'สวย, สะอาด' }, { jp: 'しずか[な]', romaji: 'shizuka[na]', th: 'เงียบ' }, { jp: 'にぎやか[な]', romaji: 'nigiyaka[na]', th: 'คึกคัก' }, { jp: 'ゆうめい[な]', romaji: 'yūmei[na]', th: 'มีชื่อเสียง' }, { jp: 'しんせつ[な]', romaji: 'shinsetsu[na]', th: 'ใจดี' }, { jp: 'げんき[な]', romaji: 'genki[na]', th: 'แข็งแรง' }, { jp: 'ひま[な]', romaji: 'hima[na]', th: 'ว่าง' }, { jp: 'べんり[な]', romaji: 'benri[na]', th: 'สะดวกสบาย' }, { jp: 'すてき[な]', romaji: 'suteki[na]', th: 'ดูดี, ยอดเยี่ยม' }, { jp: 'おおきい', romaji: 'ōkii', th: 'ใหญ่' }, { jp: 'ちいさい', romaji: 'chiisai', th: 'เล็ก' }, { jp: 'あたらしい', romaji: 'atarashii', th: 'ใหม่' }, { jp: 'ふるい', romaji: 'furui', th: 'เก่า' }, { jp: 'いい(よい)', romaji: 'ii(yoi)', th: 'ดี' }, { jp: 'わるい', romaji: 'warui', th: 'ไม่ดี' }, { jp: 'あつい', romaji: 'atsui', th: 'ร้อน' }, { jp: 'さむい', romaji: 'samui', th: 'หนาว (อากาศ)' }, { jp: 'つめたい', romaji: 'tsumetai', th: 'เย็น (สิ่งของ)' }, { jp: 'むずかしい', romaji: 'muzukashii', th: 'ยาก' }, { jp: 'やさしい', romaji: 'yasashii', th: 'ง่าย' }, { jp: 'たかい', romaji: 'takai', th: 'แพง, สูง' }, { jp: 'やすい', romaji: 'yasui', th: 'ถูก' }, { jp: 'ひくい', romaji: 'hikui', th: 'ต่ำ, เตี้ย' }, { jp: 'おもしろい', romaji: 'omoshiroi', th: 'น่าสนใจ' }, { jp: 'おいしい', romaji: 'oishii', th: 'อร่อย' }, { jp: 'いそがしい', romaji: 'isogashii', th: 'ยุ่ง' }, { jp: 'たのしい', romaji: 'tanoshii', th: 'สนุกสนาน' }, { jp: 'しろい', romaji: 'shiroi', th: 'สีขาว' }, { jp: 'くろい', romaji: 'kuroi', th: 'สีดำ' }, { jp: 'あかい', romaji: 'akai', th: 'สีแดง' }, { jp: 'あおい', romaji: 'aoi', th: 'สีน้ำเงิน' }, { jp: 'さくら', romaji: 'sakura', th: 'ดอกซากุระ' }, { jp: 'やま', romaji: 'yama', th: 'ภูเขา' }, { jp: 'まち', romaji: 'machi', th: 'เมือง' }, { jp: 'たべもの', romaji: 'tabemono', th: 'ของกิน' }, { jp: 'くるま', romaji: 'kuruma', th: 'รถยนต์' }, { jp: 'ところ', romaji: 'tokoro', th: 'สถานที่' }, { jp: 'りょう', romaji: 'ryō', th: 'หอพัก' }, { jp: 'べんきょう', romaji: 'benkyō', th: 'การเรียน' }, { jp: 'せいかつ', romaji: 'seikatsu', th: 'ชีวิตความเป็นอยู่' }, { jp: '[お]しごと', romaji: '[o]shigoto', th: 'งาน' }, { jp: 'どう', romaji: 'dō', th: 'เป็นอย่างไร' }, { jp: 'どんな～', romaji: 'donna~', th: '...แบบไหน' }, { jp: 'どれ', romaji: 'dore', th: 'อันไหน' }, { jp: 'とても', romaji: 'totemo', th: 'มาก' }, { jp: 'あまり', romaji: 'amari', th: 'ไม่ค่อย' }, { jp: 'そして', romaji: 'soshite', th: 'และ, แล้วก็' }, { jp: '[～、]が、～', romaji: '[~,]ga,~', th: '[~] แต่ ~' }, { jp: 'おげんきですか', romaji: 'ogenki desu ka', th: 'สบายดีไหม' }, { jp: 'そうですね', romaji: 'sō desu ne', th: 'นั่นสินะ' }, { jp: 'もういっぱいいかがですか', romaji: 'mō ippai ikaga desu ka', th: 'รับอีกแก้วไหม' }, { jp: 'いいえ、けっこうです', romaji: 'iie, kekkō desu', th: 'ไม่เป็นไร, พอแล้ว' }, { jp: 'そろそろしつれいします', romaji: 'sorosoro shitsurei shimasu', th: 'ใกล้ได้เวลาขอตัวแล้ว' }, { jp: 'またいらっしゃってください', romaji: 'mata irasshatte kudasai', th: 'แล้วมาอีกนะ' },
+            ],
+            9: [
+                { jp: 'わかります', romaji: 'wakarimasu', th: 'เข้าใจ' }, { jp: 'あります', romaji: 'arimasu', th: 'มี' }, { jp: 'すき[な]', romaji: 'suki[na]', th: 'ชอบ' }, { jp: 'きらい[な]', romaji: 'kirai[na]', th: 'ไม่ชอบ' }, { jp: 'じょうず[な]', romaji: 'jōzu[na]', th: 'เก่ง' }, { jp: 'へた[な]', romaji: 'heta[na]', th: 'ไม่เก่ง' }, { jp: 'りょうり', romaji: 'ryōri', th: 'อาหาร (ที่ปรุง)' }, { jp: 'のみもの', romaji: 'nomimono', th: 'เครื่องดื่ม' }, { jp: 'スポーツ', romaji: 'supōtsu', th: 'กีฬา' }, { jp: 'やきゅう', romaji: 'yakyū', th: 'เบสบอล' }, { jp: 'ダンス', romaji: 'dansu', th: 'การเต้นรำ' }, { jp: 'りょこう', romaji: 'ryokō', th: 'การท่องเที่ยว' }, { jp: 'おんがく', romaji: 'ongaku', th: 'ดนตรี' }, { jp: 'うた', romaji: 'uta', th: 'เพลง' }, { jp: 'クラシック', romaji: 'kurashikku', th: 'ดนตรีคลาสสิก' }, { jp: 'ジャズ', romaji: 'jazu', th: 'ดนตรีแจ๊ส' }, { jp: 'コンサート', romaji: 'konsāto', th: 'คอนเสิร์ต' }, { jp: 'カラオケ', romaji: 'karaoke', th: 'คาราโอเกะ' }, { jp: 'かぶき', romaji: 'kabuki', th: 'คาบุกิ' }, { jp: 'え', romaji: 'e', th: 'ภาพวาด' }, { jp: 'じ', romaji: 'ji', th: 'ตัวอักษร' }, { jp: 'かんじ', romaji: 'kanji', th: 'อักษรคันจิ' }, { jp: 'ひらがな', romaji: 'hiragana', th: 'อักษรฮิรางานะ' }, { jp: 'かたかな', romaji: 'katakana', th: 'อักษรคาตาคานะ' }, { jp: 'ローマじ', romaji: 'rōmaji', th: 'อักษรโรมัน' }, { jp: 'こまかいおかね', romaji: 'komakai okane', th: 'เงินย่อย' }, { jp: 'チケット', romaji: 'chiketto', th: 'ตั๋ว' }, { jp: 'じかん', romaji: 'jikan', th: 'เวลา' }, { jp: 'ようじ', romaji: 'yōji', th: 'ธุระ' }, { jp: 'やくそく', romaji: 'yakusoku', th: 'นัดหมาย, สัญญา' }, { jp: 'アルバイト', romaji: 'arubaito', th: 'งานพิเศษ' }, { jp: 'ごしゅじん', romaji: 'goshujin', th: 'สามี (ของผู้อื่น)' }, { jp: 'おっと/しゅじん', romaji: 'otto/shujin', th: 'สามี (ของฉัน)' }, { jp: 'おくさん', romaji: 'okusan', th: 'ภรรยา (ของผู้อื่น)' }, { jp: 'つま/かない', romaji: 'tsuma/kanai', th: 'ภรรยา (ของฉัน)' }, { jp: 'こども', romaji: 'kodomo', th: 'ลูก, เด็ก' }, { jp: 'よく', romaji: 'yoku', th: 'ดี, บ่อยๆ' }, { jp: 'だいたい', romaji: 'daitai', th: 'ส่วนใหญ่' }, { jp: 'たくさん', romaji: 'takusan', th: 'มาก, เยอะ' }, { jp: 'すこし', romaji: 'sukoshi', th: 'นิดหน่อย' }, { jp: 'ぜんぜん', romaji: 'zenzen', th: 'ไม่เลย' }, { jp: 'はやく', romaji: 'hayaku', th: 'เร็ว, ไว' }, { jp: '～から', romaji: '~kara', th: 'เพราะว่า...' }, { jp: 'どうして', romaji: 'dōshite', th: 'ทำไม' }, { jp: 'ざんねんです[ね]', romaji: 'zannen desu[ne]', th: 'น่าเสียดาย[นะ]' }, { jp: 'もしもし', romaji: 'moshi moshi', th: 'ฮัลโหล' }, { jp: 'いっしょにいかがですか', romaji: 'issho ni ikaga desu ka', th: 'ไปด้วยกันไหม' }, { jp: 'ちょっと...', romaji: 'chotto...', th: 'คงจะไม่ได้' }, { jp: 'だめですか', romaji: 'dame desu ka', th: 'ไม่ได้หรือ' }, { jp: 'またこんどおねがいします', romaji: 'mata kondo onegai shimasu', th: 'ไว้โอกาสหน้า' },
+            ],
+            10: [
+                { jp: 'います', romaji: 'imasu', th: 'มี, อยู่ (สิ่งมีชีวิต)' }, { jp: 'あります', romaji: 'arimasu', th: 'มี, อยู่ (สิ่งไม่มีชีวิต)' }, { jp: 'いろいろ[な]', romaji: 'iroiro[na]', th: 'หลากหลาย' }, { jp: 'おとこのひと', romaji: 'otoko no hito', th: 'ผู้ชาย' }, { jp: 'おんなのひと', romaji: 'onna no hito', th: 'ผู้หญิง' }, { jp: 'おとこのこ', romaji: 'otoko no ko', th: 'เด็กผู้ชาย' }, { jp: 'おんなのこ', romaji: 'onna no ko', th: 'เด็กผู้หญิง' }, { jp: 'いぬ', romaji: 'inu', th: 'สุนัข' }, { jp: 'ねこ', romaji: 'neko', th: 'แมว' }, { jp: 'パンダ', romaji: 'panda', th: 'แพนด้า' }, { jp: 'ぞう', romaji: 'zō', th: 'ช้าง' }, { jp: 'き', romaji: 'ki', th: 'ต้นไม้' }, { jp: 'もの', romaji: 'mono', th: 'สิ่งของ' }, { jp: 'でんち', romaji: 'denchi', th: 'แบตเตอรี่' }, { jp: 'はこ', romaji: 'hako', th: 'กล่อง' }, { jp: 'スイッチ', romaji: 'suitchi', th: 'สวิตช์' }, { jp: 'れいぞうこ', romaji: 'reizōko', th: 'ตู้เย็น' }, { jp: 'テーブル', romaji: 'tēburu', th: 'โต๊ะ' }, { jp: 'ベッド', romaji: 'beddo', th: 'เตียง' }, { jp: 'たな', romaji: 'tana', th: 'ชั้นวางของ' }, { jp: 'ドア', romaji: 'doa', th: 'ประตู' }, { jp: 'まど', romaji: 'mado', th: 'หน้าต่าง' }, { jp: 'ポスト', romaji: 'posuto', th: 'ตู้ไปรษณีย์' }, { jp: 'ビル', romaji: 'biru', th: 'ตึก' }, { jp: 'ATM', romaji: 'ATM', th: 'เอทีเอ็ม' }, { jp: 'コンビニ', romaji: 'konbini', th: 'ร้านสะดวกซื้อ' }, { jp: 'こうえん', romaji: 'kōen', th: 'สวนสาธารณะ' }, { jp: 'きっさてん', romaji: 'kissaten', th: 'ร้านกาแฟ' }, { jp: '～や', romaji: '~ya', th: 'ร้าน...' }, { jp: 'のりば', romaji: 'noriba', th: 'ที่ขึ้นรถ' }, { jp: 'けん', romaji: 'ken', th: 'จังหวัด' }, { jp: 'うえ', romaji: 'ue', th: 'ข้างบน' }, { jp: 'した', romaji: 'shita', th: 'ข้างล่าง' }, { jp: 'まえ', romaji: 'mae', th: 'ข้างหน้า' }, { jp: 'うしろ', romaji: 'ushiro', th: 'ข้างหลัง' }, { jp: 'みぎ', romaji: 'migi', th: 'ข้างขวา' }, { jp: 'ひだり', romaji: 'hidari', th: 'ข้างซ้าย' }, { jp: 'なか', romaji: 'naka', th: 'ข้างใน' }, { jp: 'そと', romaji: 'soto', th: 'ข้างนอก' }, { jp: 'となり', romaji: 'tonari', th: 'ข้างๆ' }, { jp: 'ちかく', romaji: 'chikaku', th: 'ใกล้ๆ' }, { jp: 'あいだ', romaji: 'aida', th: 'ระหว่าง' }, { jp: '～や～[など]', romaji: '~ya~[nado]', th: '~และ~[เป็นต้น]' }, { jp: 'いちばん～', romaji: 'ichiban~', th: '~ที่สุด' },
+            ],
+            11: [
+                { jp: 'います[こどもが～]', romaji: 'imasu[kodomo ga~]', th: 'มี[ลูก]' }, { jp: 'います[にほんに～]', romaji: 'imasu[nihon ni~]', th: 'อยู่[ที่ญี่ปุ่น]' }, { jp: 'かかります', romaji: 'kakarimasu', th: 'ใช้(เวลา,เงิน)' }, { jp: 'やすみます[かいしゃを～]', romaji: 'yasumimasu[kaisha o~]', th: 'หยุด[งาน]' }, { jp: 'ひとつ', romaji: 'hitotsu', th: 'หนึ่งอัน' }, { jp: 'ふたつ', romaji: 'futatsu', th: 'สองอัน' }, { jp: 'みっつ', romaji: 'mittsu', th: 'สามอัน' }, { jp: 'よっつ', romaji: 'yottsu', th: 'สี่อัน' }, { jp: 'いつつ', romaji: 'itsutsu', th: 'ห้าอัน' }, { jp: 'むっつ', romaji: 'muttsu', th: 'หกอัน' }, { jp: 'ななつ', romaji: 'nanatsu', th: 'เจ็ดอัน' }, { jp: 'やっつ', romaji: 'yattsu', th: 'แปดอัน' }, { jp: 'ここのつ', romaji: 'kokonotsu', th: 'เก้าอัน' }, { jp: 'とお', romaji: 'tō', th: 'สิบอัน' }, { jp: 'いくつ', romaji: 'ikutsu', th: 'กี่อัน' }, { jp: 'ひとり', romaji: 'hitori', th: 'หนึ่งคน' }, { jp: 'ふたり', romaji: 'futari', th: 'สองคน' }, { jp: '～にん', romaji: '~nin', th: '...คน' }, { jp: '～だい', romaji: '~dai', th: '...คัน, ...เครื่อง' }, { jp: '～まい', romaji: '~mai', th: '...แผ่น' }, { jp: '～かい', romaji: '~kai', th: '...ครั้ง' }, { jp: 'りんご', romaji: 'ringo', th: 'แอปเปิ้ล' }, { jp: 'みかん', romaji: 'mikan', th: 'ส้ม' }, { jp: 'サンドイッチ', romaji: 'sandoitchi', th: 'แซนด์วิช' }, { jp: 'カレー[ライス]', romaji: 'karē[raisu]', th: 'ข้าวแกงกะหรี่' }, { jp: 'アイスクリーム', romaji: 'aisukurīmu', th: 'ไอศกรีม' }, { jp: 'きって', romaji: 'kitte', th: 'แสตมป์' }, { jp: 'はがき', romaji: 'hagaki', th: 'ไปรษณียบัตร' }, { jp: 'ふうとう', romaji: 'fūtō', th: 'ซองจดหมาย' }, { jp: 'そくたつ', romaji: 'sokutatsu', th: 'ไปรษณีย์ด่วนพิเศษ' }, { jp: 'かきとめ', romaji: 'kakitome', th: 'ไปรษณีย์ลงทะเบียน' }, { jp: 'エアメール(こうくうびん)', romaji: 'eamēru(kōkūbin)', th: 'ไปรษณีย์อากาศ' }, { jp: 'ふなびん', romaji: 'funabin', th: 'ไปรษณีย์ภาคพื้น' }, { jp: 'りょうしん', romaji: 'ryōshin', th: 'พ่อแม่' }, { jp: 'きょうだい', romaji: 'kyōdai', th: 'พี่น้อง' }, { jp: 'あに', romaji: 'ani', th: 'พี่ชาย (ของฉัน)' }, { jp: 'おにいさん', romaji: 'oniisan', th: 'พี่ชาย (ของผู้อื่น)' }, { jp: 'あね', romaji: 'ane', th: 'พี่สาว (ของฉัน)' }, { jp: 'おねえさん', romaji: 'oneesan', th: 'พี่สาว (ของผู้อื่น)' }, { jp: 'おとうと', romaji: 'otōto', th: 'น้องชาย (ของฉัน)' }, { jp: 'おとうとさん', romaji: 'otōtosan', th: 'น้องชาย (ของผู้อื่น)' }, { jp: 'いもうと', romaji: 'imōto', th: 'น้องสาว (ของฉัน)' }, { jp: 'いもうとさん', romaji: 'imōtosan', th: 'น้องสาว (ของผู้อื่น)' }, { jp: 'がいこく', romaji: 'gaikoku', th: 'ต่างประเทศ' }, { jp: '～じかん', romaji: '~jikan', th: '...ชั่วโมง' }, { jp: '～しゅうかん', romaji: '~shūkan', th: '...สัปดาห์' }, { jp: '～かげつ', romaji: '~kagetsu', th: '...เดือน' }, { jp: '～ねん', romaji: '~nen', th: '...ปี' }, { jp: '～ぐらい', romaji: '~gurai', th: 'ประมาณ...' }, { jp: 'どのくらい', romaji: 'donokurai', th: 'นานเท่าไหร่' }, { jp: 'ぜんぶで', romaji: 'zenbu de', th: 'ทั้งหมด...' }, { jp: 'みんな', romaji: 'minna', th: 'ทั้งหมด, ทุกคน' }, { jp: '～だけ', romaji: '~dake', th: 'เพียง...เท่านั้น' },
+            ],
+            12: [
+                { jp: 'かんたん[な]', romaji: 'kantan[na]', th: 'ง่าย' }, { jp: 'ちかい', romaji: 'chikai', th: 'ใกล้' }, { jp: 'とおい', romaji: 'tōi', th: 'ไกล' }, { jp: 'はやい', romaji: 'hayai', th: 'เร็ว, ไว' }, { jp: 'おそい', romaji: 'osoi', th: 'ช้า' }, { jp: 'おおい[ひとが～]', romaji: 'ōi[hito ga~]', th: 'มาก, เยอะ [คน]' }, { jp: 'すくない[ひとが～]', romaji: 'sukunai[hito ga~]', th: 'น้อย [คน]' }, { jp: 'あたたかい', romaji: 'atatakai', th: 'อบอุ่น' }, { jp: 'すずしい', romaji: 'suzushii', th: 'เย็นสบาย' }, { jp: 'あまい', romaji: 'amai', th: 'หวาน' }, { jp: 'からい', romaji: 'karai', th: 'เผ็ด' }, { jp: 'おもい', romaji: 'omoi', th: 'หนัก' }, { jp: 'かるい', romaji: 'karui', th: 'เบา' }, { jp: 'いい[コーヒーが～]', romaji: 'ii[kōhī ga~]', th: 'ดี[กาแฟ]' }, { jp: 'きせつ', romaji: 'kisetsu', th: 'ฤดูกาล' }, { jp: 'はる', romaji: 'haru', th: 'ฤดูใบไม้ผลิ' }, { jp: 'なつ', romaji: 'natsu', th: 'ฤดูร้อน' }, { jp: 'あき', romaji: 'aki', th: 'ฤดูใบไม้ร่วง' }, { jp: 'ふゆ', romaji: 'fuyu', th: 'ฤดูหนาว' }, { jp: 'てんき', romaji: 'tenki', th: 'อากาศ' }, { jp: 'あめ', romaji: 'ame', th: 'ฝน' }, { jp: 'ゆき', romaji: 'yuki', th: 'หิมะ' }, { jp: 'くもり', romaji: 'kumori', th: 'มีเมฆมาก' }, { jp: 'ホテル', romaji: 'hoteru', th: 'โรงแรม' }, { jp: 'くうこう', romaji: 'kūkō', th: 'สนามบิน' }, { jp: 'うみ', romaji: 'umi', th: 'ทะเล' }, { jp: 'せかい', romaji: 'sekai', th: 'โลก' }, { jp: 'パーティー', romaji: 'pātī', th: 'ปาร์ตี้' }, { jp: '[お]まつり', romaji: '[o]matsuri', th: 'เทศกาล' }, { jp: 'しけん', romaji: 'shiken', th: 'การสอบ' }, { jp: 'すきやき', romaji: 'sukiyaki', th: 'สุกี้ยากี้' }, { jp: 'さしみ', romaji: 'sashimi', th: 'ซาชิมิ' }, { jp: 'おすし', romaji: 'osushi', th: 'ซูชิ' }, { jp: 'てんぷら', romaji: 'tempura', th: 'เทมปุระ' }, { jp: 'ぶたにく', romaji: 'butaniku', th: 'เนื้อหมู' }, { jp: 'とりにく', romaji: 'toriniku', th: 'เนื้อไก่' }, { jp: 'ぎゅうにく', romaji: 'gyūniku', th: 'เนื้อวัว' }, { jp: 'レモン', romaji: 'remon', th: 'มะนาว' }, { jp: 'いけばな', romaji: 'ikebana', th: 'การจัดดอกไม้' }, { jp: 'もみじ', romaji: 'momiji', th: 'ใบเมเปิ้ล' }, { jp: 'どちら', romaji: 'dochira', th: 'อันไหน (2 สิ่ง)' }, { jp: 'どちらも', romaji: 'dochira mo', th: 'ทั้งสองอย่าง' }, { jp: 'ずっと', romaji: 'zutto', th: 'กว่ามาก' }, { jp: 'はじめて', romaji: 'hajimete', th: 'เป็นครั้งแรก' }, { jp: 'ただいま', romaji: 'tadaima', th: 'กลับมาแล้ว' }, { jp: 'おかいりなさい', romaji: 'okaerinasai', th: 'กลับมาแล้วหรือ' }, { jp: 'つかれました', romaji: 'tsukaremashita', th: 'เหนื่อยแล้ว' },
+            ],
+            13: [
+                { jp: 'あそびます', romaji: 'asobimasu', th: 'เล่น, เที่ยว' }, { jp: 'およぎます', romaji: 'oyogimasu', th: 'ว่ายน้ำ' }, { jp: 'むかえます', romaji: 'mukaemasu', th: 'ไปรับ, ต้อนรับ' }, { jp: 'つかれます', romaji: 'tsukaremasu', th: 'เหนื่อย' }, { jp: 'けっこんします', romaji: 'kekkonshimasu', th: 'แต่งงาน' }, { jp: 'かいものします', romaji: 'kaimonoshimasu', th: 'ซื้อของ' }, { jp: 'しょくじします', romaji: 'shokujishimasu', th: 'รับประทานอาหาร' }, { jp: 'さんぽします[こうえんを～]', romaji: 'sanposhimasu[kōen o~]', th: 'เดินเล่น[ในสวน]' }, { jp: 'たいへん[な]', romaji: 'taihen[na]', th: 'ลำบาก, แย่' }, { jp: 'ほしい', romaji: 'hoshii', th: 'อยากได้, ต้องการ' }, { jp: 'ひろい', romaji: 'hiroi', th: 'กว้าง' }, { jp: 'せまい', romaji: 'semai', th: 'แคบ' }, { jp: 'プール', romaji: 'pūru', th: 'สระว่ายน้ำ' }, { jp: 'かわ', romaji: 'kawa', th: 'แม่น้ำ' }, { jp: 'びじゅつ', romaji: 'bijutsu', th: 'ศิลปะ' }, { jp: 'つり', romaji: 'tsuri', th: 'การตกปลา' }, { jp: 'スキー', romaji: 'sukī', th: 'สกี' }, { jp: 'しゅうまつ', romaji: 'shūmatsu', th: 'สุดสัปดาห์' }, { jp: '[お]しょうがつ', romaji: '[o]shōgatsu', th: 'วันปีใหม่' }, { jp: '～ごろ', romaji: '~goro', th: 'ราวๆ (เวลา)' }, { jp: 'なにか', romaji: 'nanika', th: 'อะไรสักอย่าง' }, { jp: 'どこか', romaji: 'dokoka', th: 'ที่ไหนสักแห่ง' }, { jp: 'のどがかわきます', romaji: 'nodo ga kawakimasu', th: 'หิวน้ำ' }, { jp: 'おなかがすきます', romaji: 'onaka ga sukimasu', th: 'หิวข้าว' }, { jp: 'そうしましょう', romaji: 'sō shimashō', th: 'เอาอย่างนั้นกันเถอะ' }, { jp: 'ごちゅうもんは?', romaji: 'Gochūmon wa?', th: 'จะรับอะไรดี' }, { jp: 'ていしょく', romaji: 'teishoku', th: 'อาหารชุด' }, { jp: 'ぎゅうどん', romaji: 'gyūdon', th: 'ข้าวหน้าเนื้อวัว' }, { jp: 'べつべつに', romaji: 'betsubetsu ni', th: 'แยกกัน' },
+            ],
+            14: [
+                { jp: 'つけます', romaji: 'tsukemasu', th: 'เปิด (ไฟ)' }, { jp: 'けします', romaji: 'keshimasu', th: 'ปิด (ไฟ)' }, { jp: 'あけます', romaji: 'akemasu', th: 'เปิด (ประตู, หน้าต่าง)' }, { jp: 'しめます', romaji: 'shimemasu', th: 'ปิด (ประตู, หน้าต่าง)' }, { jp: 'いそぎます', romaji: 'isogimasu', th: 'รีบ' }, { jp: 'まちます', romaji: 'machimasu', th: 'รอ' }, { jp: 'もちます', romaji: 'mochimasu', th: 'ถือ' }, { jp: 'とります', romaji: 'torimasu', th: 'หยิบ, ส่งให้' }, { jp: 'てつだいます', romaji: 'tetsudaimasu', th: 'ช่วยเหลือ' }, { jp: 'よびます', romaji: 'yobimasu', th: 'เรียก' }, { jp: 'はなします', romaji: 'hanashimasu', th: 'พูด, คุย' }, { jp: 'つかいます', romaji: 'tsukaimasu', th: 'ใช้' }, { jp: 'とめます', romaji: 'tomemasu', th: 'หยุด, จอด' }, { jp: 'みせます', romaji: 'misemasu', th: 'ให้ดู' }, { jp: 'おしえます[じゅうしょを～]', romaji: 'oshiemasu[jūsho o~]', th: 'บอก[ที่อยู่]' }, { jp: 'すわります', romaji: 'suwarimasu', th: 'นั่ง' }, { jp: 'たちます', romaji: 'tachimasu', th: 'ยืน' }, { jp: 'はいります[きっさてんに～]', romaji: 'hairimasu[kissaten ni~]', th: 'เข้า[ร้านกาแฟ]' }, { jp: 'でます[きっさてんを～]', romaji: 'demasu[kissaten o~]', th: 'ออก[จากร้านกาแฟ]' }, { jp: 'ふります[あめが～]', romaji: 'furimasu[ame ga~]', th: '[ฝน]ตก' }, { jp: 'コピーします', romaji: 'kopīshimasu', th: 'ถ่ายเอกสาร' }, { jp: 'でんき', romaji: 'denki', th: 'ไฟฟ้า, แสงไฟ' }, { jp: 'エアコン', romaji: 'eakon', th: 'เครื่องปรับอากาศ' }, { jp: 'パスポート', romaji: 'pasupōto', th: 'หนังสือเดินทาง' }, { jp: 'なまえ', romaji: 'namae', th: 'ชื่อ' }, { jp: 'じゅうしょ', romaji: 'jūsho', th: 'ที่อยู่' }, { jp: 'ちず', romaji: 'chizu', th: 'แผนที่' }, { jp: 'しお', romaji: 'shio', th: 'เกลือ' }, { jp: 'さとう', romaji: 'satō', th: 'น้ำตาล' }, { jp: 'もんだい', romaji: 'mondai', th: 'ปัญหา, โจทย์' }, { jp: 'こたえ', romaji: 'kotae', th: 'คำตอบ' }, { jp: 'よみかた', romaji: 'yomikata', th: 'วิธีอ่าน' }, { jp: 'まっすぐ', romaji: 'massugu', th: 'ตรงไป' }, { jp: 'ゆっくり', romaji: 'yukkuri', th: 'ช้าๆ, ค่อยๆ' }, { jp: 'すぐ', romaji: 'sugu', th: 'ทันที' }, { jp: 'また', romaji: 'mata', th: 'อีกครั้ง' }, { jp: 'あとで', romaji: 'atode', th: 'ทีหลัง' }, { jp: 'もうすこし', romaji: 'mō sukoshi', th: 'อีกนิดหน่อย' }, { jp: 'おつり', romaji: 'otsuri', th: 'เงินทอน' },
+            ],
+            15: [
+                { jp: 'おきます', romaji: 'okimasu', th: 'วาง' }, { jp: 'つくります', romaji: 'tsukurimasu', th: 'ทำ, สร้าง, ผลิต' }, { jp: 'うります', romaji: 'urimasu', th: 'ขาย' }, { jp: 'しります', romaji: 'shirimasu', th: 'รู้, รู้จัก' }, { jp: 'すみます', romaji: 'sumimasu', th: 'อยู่, อาศัย' }, { jp: 'けんきゅうします', romaji: 'kenkyūshimasu', th: 'วิจัย' }, { jp: 'かいはつします', romaji: 'Kai hatsu shimasu', th: 'พัฒนา' }, { jp: 'やすみをとります', romaji: 'Yasumi o torimasu', th: 'ลา[หยุด]' }, { jp: 'しりょう', romaji: 'shiryō', th: 'เอกสาร, ข้อมูล' }, { jp: 'カタログ', romaji: 'katarogu', th: 'แคตาล็อก' }, { jp: 'じこくひょう', romaji: 'jikokuhyō', th: 'ตารางเวลา' }, { jp: 'ふく', romaji: 'fuku', th: 'เสื้อผ้า' }, { jp: 'せいひん', romaji: 'seihin', th: 'ผลิตภัณฑ์' }, { jp: 'ソフト', romaji: 'sofu_to', th: 'ซอฟต์แวร์' }, { jp: 'でんしじしょ', romaji: 'denshi jisho', th: 'พจนานุกรมอิเล็กทรอนิกส์' }, { jp: 'けいざい', romaji: 'keizai', th: 'เศรษฐกิจ' }, { jp: 'しやくしょ', romaji: 'shiyakusho', th: 'ที่ทำการเทศบาล' }, { jp: 'こうこう', romaji: 'kōkō', th: 'โรงเรียนมัธยมปลาย' }, { jp: 'はいしゃ', romaji: 'haisha', th: 'หมอฟัน' }, { jp: 'どくしん', romaji: 'dokushin', th: 'โสด' }, { jp: 'いちば ', romaji: 'ichiba', th: 'ตลาด' }, { jp: 'やたい', romaji: 'Ya tai', th: 'แผงลอย' }, { jp: 'おもいだします', romaji: 'omoidashimasu', th: 'นึกออก, ระลึกถึง' }, { jp: 'いらっしゃいます', romaji: 'irasshaimasu', th: 'มี, อยู่ (คำสุภาพ)' },
+            ],
+            16: [
+                { jp: 'のります[でんしゃに～]', romaji: 'norimasu[densha ni~]', th: 'ขึ้น[รถไฟ]' }, { jp: 'おります[でんしゃを～]', romaji: 'orimasu[densha o~]', th: 'ลง[จากรถไฟ]' }, { jp: 'のりかえます', romaji: 'norikaemasu', th: 'เปลี่ยนรถ, ต่อรถ' }, { jp: 'あびます[シャワーを～]', romaji: 'abimasu[shawā o~]', th: 'อาบ[น้ำฝักบัว]' }, { jp: 'いれます', romaji: 'iremasu', th: 'ใส่เข้าไป' }, { jp: 'だします', romaji: 'dashimasu', th: 'เอาออก, ยื่น, ส่ง' }, { jp: 'おろします[おかねを～]', romaji: 'oroshimasu[okane o~]', th: 'ถอน[เงิน]' }, { jp: 'はいります[だいがくに～]', romaji: 'hairimasu[daigaku ni~]', th: 'เข้า[มหาวิทยาลัย]' }, { jp: 'でます[だいがくを～]', romaji: 'demasu[daigaku o~]', th: 'จบ[มหาวิทยาลัย]' }, { jp: 'おします', romaji: 'oshimasu', th: 'กด, ผลัก' }, { jp: 'はじめます', romaji: 'hajimemasu', th: 'เริ่ม' }, { jp: 'けんがくします', romaji: 'kengakushimasu', th: 'ทัศนศึกษา' }, { jp: 'でんわします', romaji: 'denwashimasu', th: 'โทรศัพท์' }, { jp: 'わかい', romaji: 'wakai', th: 'หนุ่ม, สาว' }, { jp: 'ながい', romaji: 'nagai', th: 'ยาว' }, { jp: 'みじかい', romaji: 'mijikai', th: 'สั้น' }, { jp: 'あかるい', romaji: 'akarui', th: 'สว่าง' }, { jp: 'くらい', romaji: 'kurai', th: 'มืด' }, { jp: 'からだ', romaji: 'karada', th: 'ร่างกาย, สุขภาพ' }, { jp: 'あたま', romaji: 'atama', th: 'หัว, ศีรษะ' }, { jp: 'かみ', romaji: 'kami', th: 'ผม' }, { jp: 'かお', romaji: 'kao', th: 'หน้า' }, { jp: 'め', romaji: 'me', th: 'ตา' }, { jp: 'みみ', romaji: 'mimi', th: 'หู' }, { jp: 'くち', romaji: 'kuchi', th: 'ปาก' }, { jp: 'は', romaji: 'ha', th: 'ฟัน' }, { jp: 'おなか', romaji: 'onaka', th: 'ท้อง' }, { jp: 'あし', romaji: 'ashi', th: 'ขา, เท้า' }, { jp: 'せ', romaji: 'se', th: 'ส่วนสูง' }, { jp: 'サービス', romaji: 'sābisu', th: 'บริการ' }, { jp: 'ジョギング', romaji: 'jogingu', th: 'จ็อกกิ้ง' }, { jp: 'シャワー', romaji: 'shawā', th: 'ฝักบัว' }, { jp: 'みどり', romaji: 'midori', th: 'สีเขียว, ธรรมชาติ' }, { jp: 'くうき', romaji: 'Kūki', th: 'อากาศ' }, { jp: '[お]てら', romaji: '[o]tera', th: 'วัดพุทธ' }, { jp: 'じんじゃ', romaji: 'jinja', th: 'ศาลเจ้า' }, { jp: '-ばん', romaji: '-ban', th: 'หมายเลข...' }, { jp: 'どうやって', romaji: 'dōyatte', th: 'ทำอย่างไร' }, { jp: 'どの～', romaji: 'dono~', th: '...ไหน (ตั้งแต่ 3 สิ่งขึ้นไป)' }, { jp: 'どれ', romaji: 'Dore', th: 'อันไหน (ตั้งแต่ 3 สิ่งขึ้นไป)' }, { jp: 'すごいですね', romaji: 'sugoi desu ne', th: 'ยอดไปเลยนะ' }, { jp: '[いいえ、]まだまだです', romaji: '[iie,] madamada desu', th: '[ไม่] ยังไม่ถึงขนาดนั้น' }, { jp: 'おひきだしですか', romaji: 'ohikidashi desu ka', th: 'จะถอนเงินหรือครับ' }, { jp: 'まず', romaji: 'mazu', th: 'ก่อนอื่น' }, { jp: 'キャッシュカード', romaji: 'kyasshukādo', th: 'บัตรเอทีเอ็ม' }, { jp: 'あんしょうばんごう', romaji: 'anshōbangō', th: 'รหัสส่วนตัว' }, { jp: 'つぎに', romaji: 'tsugini', th: 'ต่อไป' }, { jp: 'きんがく', romaji: 'kingaku', th: 'จำนวนเงิน' }, { jp: 'かくにん', romaji: 'kakunin', th: 'การยืนยัน' }, { jp: 'チェック', romaji: 'chekku', th: 'การยืนยัน' }, { jp: 'サイン', romaji: 'sain', th: 'เซ็นชื่อ' }, { jp: 'ボタン', romaji: 'botan', th: 'ปุ่ม' },
+            ],
+            17: [
+                { jp: 'おぼえます', romaji: 'oboemasu', th: 'จำ' }, { jp: 'わすれます', romaji: 'wasuremasu', th: 'ลืม' }, { jp: 'なくします', romaji: 'nakushimasu', th: 'ทำหาย' }, { jp: 'はらいます', romaji: 'haraimasu', th: 'จ่าย, ชำระ' }, { jp: 'かえします', romaji: 'kaeshimasu', th: 'คืน' }, { jp: 'でかけます', romaji: 'dekakemasu', th: 'ออกไปข้างนอก' }, { jp: 'ぬぎます', romaji: 'nugimasu', th: 'ถอด(เสื้อผ้า,รองเท้า)' }, { jp: 'もっていきます', romaji: 'motteikimasu', th: 'นำไป, เอาไป' }, { jp: 'もってきます', romaji: 'mottekimasu', th: 'นำมา, เอามา' }, { jp: 'しんぱいします', romaji: 'shinpaishimasu', th: 'เป็นห่วง' }, { jp: 'ざんぎょうします', romaji: 'zangyōshimasu', th: 'ทำงานล่วงเวลา' }, { jp: 'しゅっちょうします', romaji: 'shutchōshimasu', th: 'ไปทำงานต่างถิ่น' }, { jp: 'のみます[くすりを～]', romaji: 'nomimasu[kusuri o~]', th: 'กิน[ยา]' }, { jp: 'はいります[おふろに～]', romaji: 'hairimasu[ofuro ni~]', th: 'อาบน้ำ[ในอ่าง]' }, { jp: 'たいせつ[な]', romaji: 'taisetsu[na]', th: 'สำคัญ' }, { jp: 'だいじょうぶ[な]', romaji: 'daijōbu[na]', th: 'ไม่เป็นไร' }, { jp: 'あぶない', romaji: 'abunai', th: 'อันตราย' }, { jp: 'きんえん', romaji: 'kinen', th: 'ห้ามสูบบุหรี่' }, { jp: '[けんこう]ほけんしょう', romaji: '[kenkō]hokenshō', th: 'ใบประกัน[สุขภาพ]' }, { jp: 'ねつ', romaji: 'netsu', th: 'ไข้' }, { jp: 'びょうき', romaji: 'byōki', th: 'ป่วย, ไม่สบาย' }, { jp: 'くすり', romaji: 'kusuri', th: 'ยา' }, { jp: '[お]ふろ', romaji: '[o]furo', th: 'อ่างอาบน้ำ' }, { jp: 'うわぎ', romaji: 'uwagi', th: 'เสื้อนอก' }, { jp: 'したぎ', romaji: 'shitagi', th: 'ชุดชั้นใน' }, { jp: '2,3にち', romaji: 'ni, san nichi', th: 'สองสามวัน' }, { jp: '～までに', romaji: '~madeni', th: 'ก่อน..., ภายใน...' }, { jp: 'ですから', romaji: 'desukara', th: 'ดังนั้น, เพราะฉะนั้น' }, { jp: 'どうしましたか', romaji: 'dō shimashita ka', th: 'เป็นอะไรหรือ' }, { jp: 'のど', romaji: 'nodo', th: 'คอ, ลำคอ' }, { jp: '[～が]いたいです', romaji: '[~ga] itai desu', th: 'เจ็บ[~], ปวด[~]' }, { jp: 'かぜ', romaji: 'kaze', th: 'หวัด' }, { jp: 'おだいじに', romaji: 'odaijini', th: 'ขอให้หายเร็วๆ' },
+            ],
+            18: [
+                { jp: 'できます', romaji: 'dekimasu', th: 'สามารถ, ได้' }, { jp: 'あらいます', romaji: 'araimasu', th: 'ล้าง' }, { jp: 'ひきます', romaji: 'hikimasu', th: 'ดีด, เล่น(เครื่องสาย)' }, { jp: 'うたいます', romaji: 'utaimasu', th: 'ร้อง(เพลง)' }, { jp: 'あつめます', romaji: 'atsumemasu', th: 'สะสม, รวบรวม' }, { jp: 'すてます', romaji: 'sutemasu', th: 'ทิ้ง' }, { jp: 'かえます', romaji: 'kaemasu', th: 'แลกเปลี่ยน' }, { jp: 'うんてんします', romaji: 'untenshimasu', th: 'ขับรถ' }, { jp: 'よやくします', romaji: 'yoyakushimasu', th: 'จอง' }, { jp: 'ピアノ', romaji: 'piano', th: 'เปียโน' }, { jp: '-メートル', romaji: '-mētoru', th: 'เมตร' }, { jp: 'げんきん', romaji: 'genkin', th: 'เงินสด' }, { jp: 'しゅみ', romaji: 'shumi', th: 'งานอดิเรก' }, { jp: 'にっき', romaji: 'nikki', th: 'ไดอารี่' }, { jp: 'おいのり', romaji: 'oinori', th: 'การอธิษฐาน' }, { jp: 'かちょう', romaji: 'kachō', th: 'ผู้จัดการแผนก' }, { jp: 'ぶちょう', romaji: 'buchō', th: 'ผู้จัดการฝ่าย' }, { jp: 'しゃちょう', romaji: 'shachō', th: 'ประธานบริษัท' }, { jp: 'どうぶつ', romaji: 'dōbutsu', th: 'สัตว์' }, { jp: 'うま', romaji: 'uma', th: 'ม้า' }, { jp: 'インターネット', romaji: 'intānetto', th: 'อินเทอร์เน็ต' }, { jp: 'とくに', romaji: 'tokuni', th: 'โดยเฉพาะ' }, { jp: 'へえ', romaji: 'hē', th: 'โห!, เหรอ!' }, { jp: 'それはおもしろいですね', romaji: 'sore wa omoshiroi desu ne', th: 'น่าสนใจนะ' }, { jp: 'なかなか', romaji: 'nakanaka', th: 'ไม่ค่อยได้ (ใช้กับปฏิเสธ)' }, { jp: 'ほんとうですか', romaji: 'hontō desu ka', th: 'จริงหรือ' }, { jp: 'ぜひ', romaji: 'zehi', th: 'ต้อง...ให้ได้' },
+            ],
+            19: [
+                { jp: 'のぼります', romaji: 'noborimasu', th: 'ปีน, ไต่' }, { jp: 'とまります[ホテルに～]', romaji: 'tomarimasu[hoteru ni~]', th: 'พัก[ที่โรงแรม]' }, { jp: 'そうじします', romaji: 'sōjishimasu', th: 'ทำความสะอาด' }, { jp: 'せんたくします', romaji: 'sentakushimasu', th: 'ซักผ้า' }, { jp: 'なります', romaji: 'narimasu', th: 'กลายเป็น' }, { jp: 'ねむい', romaji: 'nemui', th: 'ง่วง' }, { jp: 'つよい', romaji: 'tsuyoi', th: 'แข็งแรง, เข้มแข็ง' }, { jp: 'よわい', romaji: 'yowai', th: 'อ่อนแอ' }, { jp: 'れんしゅう', romaji: 'renshū', th: 'การฝึกฝน' }, { jp: 'ゴルフ', romaji: 'gorufu', th: 'กอล์ฟ' }, { jp: 'すもう', romaji: 'sumō', th: 'ซูโม่' }, { jp: 'おちゃ', romaji: 'ocha', th: 'พิธีชงชา' }, { jp: 'ひ', romaji: 'hi', th: 'วัน' }, { jp: 'ちょうし', romaji: 'chōshi', th: 'สภาพ' }, { jp: 'いちど', romaji: 'ichido', th: 'หนึ่งครั้ง' }, { jp: 'いちども', romaji: 'ichido mo', th: 'ไม่เคยเลยสักครั้ง' }, { jp: 'だんだん', romaji: 'dandan', th: 'ค่อยๆ, ทีละน้อย' }, { jp: 'もうすぐ', romaji: 'mō sugu', th: 'ในไม่ช้า' }, { jp: 'おかげさまで', romaji: 'okagesama de', th: 'ขอบคุณที่เป็นห่วง' }, { jp: 'でも', romaji: 'demo', th: 'แต่' }, { jp: 'かんぱい', romaji: 'kanpai', th: 'ไชโย!, ชนแก้ว!' }, { jp: 'ダイエット', romaji: 'daietto', th: 'การลดความอ้วน' }, { jp: 'むり[な]', romaji: 'muri[na]', th: 'เกินกำลัง, หักโหม' }, { jp: 'からだにいい', romaji: 'karada ni ii', th: 'ดีต่อสุขภาพ' },
+            ],
+            20: [
+                { jp: 'いります[ビザが～]', romaji: 'irimasu[biza ga~]', th: 'จำเป็นต้องมี[วีซ่า]' }, { jp: 'しらべます', romaji: 'shirabemasu', th: 'ตรวจสอบ' }, { jp: 'しゅうりします', romaji: 'shūrishimasu', th: 'ซ่อมแซม' }, { jp: 'ぼく', romaji: 'boku', th: 'ผม (กันเอง)' }, { jp: 'きみ', romaji: 'kimi', th: 'คุณ, เธอ (กันเอง)' }, { jp: '～くん', romaji: '~kun', th: 'คุณ... (กันเอง, ใช้กับผู้ชาย)' }, { jp: 'うん', romaji: 'un', th: 'อือ, ใช่ (กันเอง)' }, { jp: 'ううん', romaji: 'uun', th: 'ไม่, เปล่า (กันเอง)' }, { jp: 'ことば', romaji: 'kotoba', th: 'คำ, ภาษา' }, { jp: 'きもの', romaji: 'kimono', th: 'กิโมโน' }, { jp: 'ビザ', romaji: 'biza', th: 'วีซ่า' }, { jp: 'はじめ', romaji: 'hajime', th: 'ตอนแรก' }, { jp: 'おわり', romaji: 'owari', th: 'ตอนจบ' }, { jp: 'こっち', romaji: 'kotchi', th: 'ทางนี้ (กันเอง)' }, { jp: 'そっち', romaji: 'sotchi', th: 'ทางนั้น (กันเอง)' }, { jp: 'あっち', romaji: 'atchi', th: 'ทางโน้น (กันเอง)' }, { jp: 'どっち', romaji: 'dotchi', th: 'ทางไหน (กันเอง)' }, { jp: 'みんなで', romaji: 'minna de', th: 'ด้วยกันทุกคน' }, { jp: '～けど', romaji: '~kedo', th: '...แต่ (กันเอง)' }, { jp: 'おなかがいっぱいです', romaji: 'onaka ga ippai desu', th: 'อิ่มแล้ว' }, { jp: 'よかったら', romaji: 'yokattara', th: 'ถ้าไม่รังเกียจ' },
+            ],
+            21: [
+                { jp: 'おもいます', romaji: 'omoimasu', th: 'คิดว่า' }, { jp: 'いいます', romaji: 'iimasu', th: 'พูด' }, { jp: 'かちます', romaji: 'kachimasu', th: 'ชนะ' }, { jp: 'まけます', romaji: 'makemasu', th: 'แพ้' }, { jp: 'あります[おまつりが～]', romaji: 'arimasu[omatsuri ga~]', th: 'มี[งานเทศกาล]' }, { jp: 'やくにたちます', romaji: 'yakunitachimasu', th: 'เป็นประโยชน์' }, { jp: 'うごきます', romaji: 'ugokimasu', th: 'เคลื่อนไหว, เดิน' }, { jp: 'やめます[かいしゃを～]', romaji: 'yamemasu[kaisha o~]', th: 'ลาออก[จากบริษัท]' }, { jp: 'きをつけます', romaji: 'ki o tsukemasu', th: 'ระมัดระวัง' }, { jp: 'りゅうがくします', romaji: 'ryūgakushimasu', th: 'ศึกษาต่อต่างประเทศ' }, { jp: 'むだ[な]', romaji: 'muda[na]', th: 'สิ้นเปลือง' }, { jp: 'ふべん[な]', romaji: 'fuben[na]', th: 'ไม่สะดวก' }, { jp: 'すごい', romaji: 'sugoi', th: 'ยอดเยี่ยม, แย่มาก' }, { jp: 'ほんとう', romaji: 'hontō', th: 'จริง' }, { jp: 'うそ', romaji: 'uso', th: 'โกหก' }, { jp: 'じどうしゃ', romaji: 'jidōsha', th: 'รถยนต์' }, { jp: 'こうつう', romaji: 'kōtsū', th: 'การคมนาคม' }, { jp: 'ぶっか', romaji: 'bukka', th: 'ค่าครองชีพ' }, { jp: 'ほうそう', romaji: 'hōsō', th: 'การแพร่ภาพ' }, { jp: 'ニュース', romaji: 'nyūsu', th: 'ข่าว' }, { jp: 'アニメ', romaji: 'anime', th: 'อนิเมะ' }, { jp: 'マンガ', romaji: 'manga', th: 'มังงะ' }, { jp: 'デザイン', romaji: 'dezain', th: 'ดีไซน์' }, { jp: 'ゆめ', romaji: 'yume', th: 'ความฝัน' }, { jp: 'てんさい', romaji: 'tensai', th: 'อัจฉริยะ' }, { jp: 'しあい', romaji: 'shiai', th: 'การแข่งขัน' }, { jp: 'いけん', romaji: 'iken', th: 'ความคิดเห็น' }, { jp: 'はなし', romaji: 'hanashi', th: 'เรื่องราว' }, { jp: 'ちきゅう', romaji: 'chikyū', th: 'โลก' }, { jp: 'つき', romaji: 'tsuki', th: 'ดวงจันทร์' }, { jp: 'さいきん', romaji: 'saikin', th: 'หมู่นี้' }, { jp: 'たぶん', romaji: 'tabun', th: 'บางที, อาจจะ' }, { jp: 'きっと', romaji: 'kitto', th: 'แน่นอน' }, { jp: 'ほんとうに', romaji: 'hontōni', th: 'จริงๆ' }, { jp: 'そんなに', romaji: 'sonnani', th: 'ไม่...ขนาดนั้น' }, { jp: '～について', romaji: '~ni tsuite', th: 'เกี่ยวกับ...' }, { jp: 'ひさしぶりですね', romaji: 'hisashiburi desu ne', th: 'ไม่ได้เจอกันนานนะ' }, { jp: '～でものみませんか', romaji: '~demo nomimasen ka', th: 'ดื่ม...หรืออะไรสักอย่างไหม' }, { jp: 'もちろん', romaji: 'mochiron', th: 'แน่นอน' }, { jp: 'もうかえらないと', romaji: 'mō kaeranai to', th: 'ต้องกลับแล้วล่ะ' },
+            ],
+            22: [
+                { jp: 'きます', romaji: 'kimasu', th: 'สวม, ใส่ (เสื้อ)' }, { jp: 'はきます', romaji: 'hakimasu', th: 'สวม, ใส่ (กางเกง, รองเท้า)' }, { jp: 'かぶります', romaji: 'kaburimasu', th: 'สวม, ใส่ (หมวก)' }, { jp: 'かけます[めがねを～]', romaji: 'kakemasu[megane o~]', th: 'สวม, ใส่[แว่นตา]' }, { jp: 'うまれます', romaji: 'umaremasu', th: 'เกิด' }, { jp: 'わたしたち', romaji: 'watashitachi', th: 'พวกเรา' }, { jp: 'コート', romaji: 'kōto', th: 'เสื้อโค้ต' }, { jp: 'セーター', romaji: 'sētā', th: 'สเวตเตอร์' }, { jp: 'スーツ', romaji: 'sūtsu', th: 'ชุดสูท' }, { jp: 'ぼうし', romaji: 'bōshi', th: 'หมวก' }, { jp: 'めがね', romaji: 'megane', th: 'แว่นตา' }, { jp: 'ケーキ', romaji: 'kēki', th: 'เค้ก' }, { jp: '[お]べんとう', romaji: '[o]bentō', th: 'ข้าวกล่อง' }, { jp: 'ロボット', romaji: 'robotto', th: 'หุ่นยนต์' }, { jp: 'ユーモア', romaji: 'yūmoa', th: 'อารมณ์ขัน' }, { jp: 'つごう', romaji: 'tsugō', th: 'ความสะดวก' }, { jp: 'よく', romaji: 'yoku', th: 'บ่อยๆ' }, { jp: 'えーと', romaji: 'ēto', th: 'เอ่อ...' }, { jp: 'おめでとうございます', romaji: 'omedetō gozaimasu', th: 'ขอแสดงความยินดี' }, { jp: 'おさがしですか', romaji: 'osagashi desu ka', th: 'กำลังหาอะไรอยู่หรือ' }, { jp: 'では', romaji: 'dewa', th: 'ถ้าอย่างนั้น' }, { jp: 'こちら', romaji: 'kochira', th: 'นี่ (สุภาพ)' }, { jp: 'やちん', romaji: 'yachin', th: 'ค่าเช่าบ้าน' }, { jp: 'ダイニングキッチン', romaji: 'dainingu kitchin', th: 'ห้องครัวพร้อมห้องทานอาหาร' }, { jp: 'わしつ', romaji: 'washitsu', th: 'ห้องแบบญี่ปุ่น' }, { jp: 'おしいれ', romaji: 'oshiire', th: 'ตู้เก็บของติดผนัง' }, { jp: 'ふとん', romaji: 'futon', th: 'ฟูก, ที่นอน' },
+            ],
+            23: [
+                { jp: 'ききます[せんせいに～]', romaji: 'kikimasu[sensei ni~]', th: 'ถาม[อาจารย์]' }, { jp: 'まわします', romaji: 'mawashimasu', th: 'หมุน' }, { jp: 'ひきます', romaji: 'hikimasu', th: 'ดึง' }, { jp: 'かえます', romaji: 'kaemasu', th: 'เปลี่ยน' }, { jp: 'さわります[ドアに～]', romaji: 'sawarimasu[doa ni~]', th: 'จับ[ประตู]' }, { jp: 'でます[おつりが～]', romaji: 'demasu[otsuri ga~]', th: '[เงินทอน]ออกมา' }, { jp: 'あるきます', romaji: 'arukimasu', th: 'เดิน' }, { jp: 'わたります[はしを～]', romaji: 'watarimasu[hashi o~]', th: 'ข้าม[สะพาน]' }, { jp: 'まがります[みぎへ～]', romaji: 'magarimasu[migi e~]', th: 'เลี้ยว[ไปทางขวา]' }, { jp: 'さびしい', romaji: 'sabishii', th: 'เหงา' }, { jp: '[お]ゆ', romaji: '[o]yu', th: 'น้ำร้อน' }, { jp: 'おと', romaji: 'oto', th: 'เสียง' }, { jp: 'サイズ', romaji: 'saizu', th: 'ขนาด, ไซส์' }, { jp: 'こしょう', romaji: 'koshō', th: 'การชำรุด' }, { jp: 'みち', romaji: 'michi', th: 'ถนน, เส้นทาง' }, { jp: 'こうさてん', romaji: 'kōsaten', th: 'สี่แยก' }, { jp: 'しんごう', romaji: 'shingō', th: 'สัญญาณไฟจราจร' }, { jp: 'かど', romaji: 'kado', th: 'หัวมุม' }, { jp: 'はし', romaji: 'hashi', th: 'สะพาน' }, { jp: 'ちゅうしゃじょう', romaji: 'chūshajō', th: 'ที่จอดรถ' }, { jp: 'たてもの', romaji: 'tatemono', th: 'อาคาร, ตึก' }, { jp: 'なんかいも', romaji: 'nankaimo', th: 'หลายครั้ง' }, { jp: '-め', romaji: '-me', th: 'ลำดับที่...' },
+            ],
+            24: [
+                { jp: 'くれます', romaji: 'kuremasu', th: 'ให้ (ฉัน)' }, { jp: 'なおします', romaji: 'naoshimasu', th: 'ซ่อมแซม, แก้ไข' }, { jp: 'つれていきます', romaji: 'tsureteikimasu', th: 'พา(คน)ไป' }, { jp: 'つれてきます', romaji: 'tsuretekimasu', th: 'พา(คน)มา' }, { jp: 'おくります[ひとを～]', romaji: 'okurimasu[hito o~]', th: 'ไปส่ง[คน]' }, { jp: 'しょうかいします', romaji: 'shōkaishimasu', th: 'แนะนำ' }, { jp: 'あんないします', romaji: 'annaishimasu', th: 'นำชม, นำทาง' }, { jp: 'せつめいします', romaji: 'setsumeishimasu', th: 'อธิบาย' }, { jp: 'おじいさん/おじいちゃん', romaji: 'ojiisan/ojiichan', th: 'ปู่, ตา, ชายสูงอายุ' }, { jp: 'おばあさん/おばあちゃん', romaji: 'obāsan/obāchan', th: 'ย่า, ยาย, หญิงสูงอายุ' }, { jp: 'じゅんび', romaji: 'junbi', th: 'การจัดเตรียม' }, { jp: 'ひっこし', romaji: 'hikkoshi', th: 'การย้ายบ้าน' }, { jp: '[お]かし', romaji: '[o]kashi', th: 'ขนม' }, { jp: 'ホームステイ', romaji: 'hōmusutei', th: 'โฮมสเตย์' }, { jp: 'ぜんぶ', romaji: 'zenbu', th: 'ทั้งหมด' }, { jp: 'じぶんで', romaji: 'jibun de', th: 'ด้วยตัวเอง' }, { jp: 'ほかに', romaji: 'hokani', th: 'นอกจากนี้' }, { jp: 'ははのひ', romaji: 'haha no hi', th: 'วันแม่' },
+            ],
+            25: [
+                { jp: 'かんがえます', romaji: 'kangaemasu', th: 'คิด, ครุ่นคิด' }, { jp: 'つきます[えきに～]', romaji: 'tsukimasu[eki ni~]', th: 'ถึง[สถานี]' }, { jp: 'とります[としを～]', romaji: 'torimasu[toshi o~]', th: '[อายุ]มากขึ้น' }, { jp: 'たります', romaji: 'tarimasu', th: 'เพียงพอ' }, { jp: 'いなか', romaji: 'inaka', th: 'ต่างจังหวัด, ชนบท' }, { jp: 'チャンス', romaji: 'chansu', th: 'โอกาส' }, { jp: 'おく', romaji: 'oku', th: 'ร้อยล้าน' }, { jp: 'もし[～たら]', romaji: 'moshi[~tara]', th: 'ถ้า...' }, { jp: 'いみ', romaji: 'imi', th: 'ความหมาย' }, { jp: 'てんきん', romaji: 'tenkin', th: 'การย้ายไปทำงานสาขาอื่น' }, { jp: 'こと', romaji: 'koto', th: 'เรื่อง' }, { jp: '[いろいろ]おせわになりました', romaji: '[iroiro] osewa ni narimashita', th: 'ได้รับความกรุณา[ต่างๆ มากมาย]' }, { jp: 'がんばります', romaji: 'ganbarimasu', th: 'พยายาม' }, { jp: 'どうぞおげんきで', romaji: 'dōzo ogenki de', th: 'ขอให้โชคดี' },
+            ],
+        };
+
+        const chapterSelect = document.getElementById('chapter-select');
+        const chapterTitle = document.getElementById('chapter-title');
+        const vocabList = document.getElementById('vocab-list');
+        const playAllBtn = document.getElementById('play-all-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const jpVoiceSelect = document.getElementById('jp-voice-select');
+        const thVoiceSelect = document.getElementById('th-voice-select');
+        
+        const synth = window.speechSynthesis;
+        let voices = [];
+        let currentChapterWords = [];
+        let wordIndex = 0;
+        let isPlayingAll = false;
+
+        function populateVoiceList() {
+            voices = synth.getVoices();
+            jpVoiceSelect.innerHTML = '';
+            thVoiceSelect.innerHTML = '';
+
+            const jpVoices = voices.filter(voice => voice.lang.startsWith('ja'));
+            const thVoices = voices.filter(voice => voice.lang.startsWith('th'));
+
+            if (jpVoices.length > 0) {
+                jpVoices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    option.setAttribute('data-lang', voice.lang);
+                    option.setAttribute('data-name', voice.name);
+                    jpVoiceSelect.appendChild(option);
+                });
+            } else {
+                jpVoiceSelect.innerHTML = '<option>ไม่พบเสียงภาษาญี่ปุ่น</option>';
+            }
+            
+            if (thVoices.length > 0) {
+                 thVoices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    option.setAttribute('data-lang', voice.lang);
+                    option.setAttribute('data-name', voice.name);
+                    thVoiceSelect.appendChild(option);
+                });
+            } else {
+                 thVoiceSelect.innerHTML = '<option>ไม่พบเสียงภาษาไทย</option>';
+            }
+        }
+
+        function speakSingle(text, lang = 'ja-JP') {
+            if (isPlayingAll || synth.speaking) {
+                return;
+            }
+            speakAndChain(text, lang, null);
+        }
+
+        function speakAndChain(text, lang, onEndCallback) {
+            if (text !== '') {
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                const selectedVoiceName = lang.startsWith('ja') 
+                    ? jpVoiceSelect.selectedOptions[0].getAttribute('data-name')
+                    : thVoiceSelect.selectedOptions[0].getAttribute('data-name');
+                
+                const selectedVoice = voices.find(voice => voice.name === selectedVoiceName);
+
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+                
+                utterance.lang = lang;
+                utterance.pitch = 4;
+                utterance.rate = 0.75;
+                utterance.onend = onEndCallback;
+                utterance.onerror = (event) => {
+                    console.error('SpeechSynthesisUtterance.onerror', event);
+                    if (onEndCallback) onEndCallback();
+                };
+                synth.speak(utterance);
+            } else {
+                if (onEndCallback) onEndCallback();
+            }
+        }
+
+        function playNextWord() {
+            if (!isPlayingAll || wordIndex >= currentChapterWords.length) {
+                isPlayingAll = false;
+                playAllBtn.classList.remove('hidden');
+                stopBtn.classList.add('hidden');
+                return;
+            }
+
+            const word = currentChapterWords[wordIndex];
+            
+            speakAndChain(word.jp, 'ja-JP', () => {
+                setTimeout(() => {
+                    if (!isPlayingAll) return;
+                    speakAndChain(word.th, 'th-TH', () => {
+                        wordIndex++;
+                        setTimeout(() => {
+                            if (!isPlayingAll) return;
+                            playNextWord();
+                        }, 500);
+                    });
+                }, 200);
+            });
+        }
+
+        function displayChapter(chapterNumber) {
+            const chapterData = vocabularyData[chapterNumber];
+            chapterTitle.textContent = `บทที่ ${chapterNumber} (第${chapterNumber}課)`;
+            vocabList.innerHTML = '';
+
+            if (!chapterData || chapterData.length === 0) {
+                vocabList.innerHTML = '<p>ไม่พบข้อมูลคำศัพท์สำหรับบทนี้</p>';
+                return;
+            }
+
+            chapterData.forEach(word => {
+                const card = document.createElement('div');
+                card.className = 'flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl shadow-sm hover:shadow-md hover:bg-indigo-50 dark:hover:bg-gray-600/50 transition-all duration-300';
+                
+                const wordInfo = document.createElement('div');
+                const jpText = document.createElement('p');
+                jpText.className = 'text-xl font-bold text-indigo-700 dark:text-indigo-300 jp-font';
+                jpText.textContent = word.jp;
+
+                const romajiText = document.createElement('p');
+                romajiText.className = 'text-sm text-gray-500 dark:text-gray-400';
+                romajiText.textContent = word.romaji;
+
+                const thText = document.createElement('p');
+                thText.className = 'text-md text-gray-700 dark:text-gray-300 mt-1';
+                thText.textContent = word.th;
+
+                wordInfo.appendChild(jpText);
+                wordInfo.appendChild(romajiText);
+                wordInfo.appendChild(thText);
+
+                const playButton = document.createElement('button');
+                playButton.innerHTML = '🔊';
+                playButton.className = 'text-3xl cursor-pointer transform hover:scale-110 transition-transform duration-200';
+                playButton.onclick = () => speakSingle(word.jp, 'ja-JP');
+
+                card.appendChild(wordInfo);
+                card.appendChild(playButton);
+                vocabList.appendChild(card);
+            });
+        }
+        
+        function stopPlayback() {
+            isPlayingAll = false;
+            synth.cancel();
+            playAllBtn.classList.remove('hidden');
+            stopBtn.classList.add('hidden');
+        }
+
+        playAllBtn.addEventListener('click', () => {
+            if (synth.speaking) return;
+            const selectedChapter = chapterSelect.value;
+            currentChapterWords = vocabularyData[selectedChapter];
+            wordIndex = 0;
+            isPlayingAll = true;
+
+            playAllBtn.classList.add('hidden');
+            stopBtn.classList.remove('hidden');
+
+            playNextWord();
+        });
+
+        stopBtn.addEventListener('click', stopPlayback);
+
+        chapterSelect.addEventListener('change', (e) => {
+            stopPlayback();
+            displayChapter(e.target.value);
+        });
+
+        window.onload = () => {
+            if (!('speechSynthesis' in window)) {
+                alert('ขออภัย, เบราว์เซอร์ของคุณไม่รองรับการสังเคราะห์เสียงพูด');
+                playAllBtn.disabled = true;
+                return;
+            }
+            
+            populateVoiceList();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = populateVoiceList;
+            }
+            
+            for (let i = 1; i <= 25; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `บทที่ ${i}`;
+                chapterSelect.appendChild(option);
+            }
+
+            displayChapter(1);
+        };
+    </script>
+</body>
+</html>
